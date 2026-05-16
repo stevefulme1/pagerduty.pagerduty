@@ -16,7 +16,7 @@
   block:
     - name: List all rulesets
       pagerduty.pagerduty.ruleset_info:
-        token: "{{ pagerduty_api_token }}"
+        api_token: "{{ pagerduty_api_token }}"
       register: _migration_rulesets
 
     - name: Display rulesets found
@@ -25,7 +25,7 @@
 
     - name: Get rules for each ruleset
       pagerduty.pagerduty.ruleset_rule_info:
-        token: "{{ pagerduty_api_token }}"
+        api_token: "{{ pagerduty_api_token }}"
         ruleset_id: "{{ item.id }}"
       loop: "{{ _migration_rulesets.rulesets | default([]) }}"
       loop_control:
@@ -73,15 +73,15 @@
   block:
     - name: List rulesets to migrate
       pagerduty.pagerduty.ruleset_info:
-        token: "{{ pagerduty_api_token }}"
+        api_token: "{{ pagerduty_api_token }}"
       register: _migration_rulesets
 
     - name: Filter to specific ruleset if specified
       ansible.builtin.set_fact:
         _rulesets_to_migrate: >-
           {{ _migration_rulesets.rulesets | default([])
-             | selectattr('id', 'equalto', legacy_ruleset_id) | list
-             if legacy_ruleset_id | length > 0
+             | selectattr('id', 'equalto', migration_legacy_ruleset_id) | list
+             if migration_legacy_ruleset_id | length > 0
              else _migration_rulesets.rulesets | default([]) }}
 
     - name: Display migration plan
@@ -89,7 +89,7 @@
         msg:
           - "Migration plan:"
           - "  Rulesets to migrate: {{ _rulesets_to_migrate | length }}"
-          - "  Disable legacy after migration: {{ disable_legacy_after_migration }}"
+          - "  Disable legacy after migration: {{ migration_disable_legacy }}"
 
     - name: Migrate each ruleset
       ansible.builtin.include_tasks: migrate_ruleset.yml
@@ -105,7 +105,7 @@
           - "MIGRATION COMPLETE"
           - "========================================="
           - "Rulesets migrated: {{ _rulesets_to_migrate | length }}"
-          - "Legacy rulesets disabled: {{ disable_legacy_after_migration }}"
+          - "Legacy rulesets disabled: {{ migration_disable_legacy }}"
           - "========================================="
   rescue:
     - name: Migration failed

@@ -1,3 +1,4 @@
+---
 namespace: pagerduty
 name: pagerduty
 version: 1.0.0

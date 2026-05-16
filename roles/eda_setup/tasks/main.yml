@@ -6,8 +6,8 @@
   ansible.builtin.assert:
     that:
       - pagerduty_api_token | length > 0
-      - eda_webhook_url | length > 0
-    fail_msg: "pagerduty_api_token and eda_webhook_url must be set"
+      - eda_setup_webhook_url | length > 0
+    fail_msg: "pagerduty_api_token and eda_setup_webhook_url must be set"
 
 # --- Webhook Subscription ---
 
@@ -15,11 +15,11 @@
   block:
     - name: Create webhook subscription
       pagerduty.pagerduty.webhook_subscription:
-        token: "{{ pagerduty_api_token }}"
+        api_token: "{{ pagerduty_api_token }}"
         description: "EDA webhook for event-driven automation"
-        delivery_method_url: "{{ eda_webhook_url }}"
-        delivery_method_secret: "{{ eda_webhook_secret | default(omit) }}"
-        events: "{{ eda_event_types }}"
+        delivery_method_url: "{{ eda_setup_webhook_url }}"
+        delivery_method_secret: "{{ eda_setup_webhook_secret | default(omit) }}"
+        events: "{{ eda_setup_event_types }}"
         state: present
       register: _eda_webhook
 
@@ -27,8 +27,8 @@
       ansible.builtin.debug:
         msg:
           - "Webhook subscription created:"
-          - "  URL: {{ eda_webhook_url }}"
-          - "  Events: {{ eda_event_types | join(', ') }}"
+          - "  URL: {{ eda_setup_webhook_url }}"
+          - "  Events: {{ eda_setup_event_types | join(', ') }}"
           - "  ID: {{ _eda_webhook.webhook_subscription.id | default('created') }}"
   rescue:
     - name: Webhook creation failed
@@ -39,14 +39,14 @@
 
 - name: Ensure rulebook directory exists
   ansible.builtin.file:
-    path: "{{ eda_rulebook_path | dirname }}"
+    path: "{{ eda_setup_rulebook_path | dirname }}"
     state: directory
     mode: "0755"
 
 - name: Generate EDA rulebook from template
   ansible.builtin.template:
     src: pagerduty_rulebook.yml.j2
-    dest: "{{ eda_rulebook_path }}"
+    dest: "{{ eda_setup_rulebook_path }}"
     mode: "0644"
   register: _eda_rulebook
 
@@ -54,9 +54,9 @@
   ansible.builtin.debug:
     msg:
       - "EDA rulebook deployed:"
-      - "  Path: {{ eda_rulebook_path }}"
-      - "  Webhook listener: {{ eda_webhook_host }}:{{ eda_webhook_port }}"
-      - "  Remediation playbooks: {{ remediation_playbooks | length }}"
+      - "  Path: {{ eda_setup_rulebook_path }}"
+      - "  Webhook listener: {{ eda_setup_webhook_host }}:{{ eda_setup_webhook_port }}"
+      - "  Remediation playbooks: {{ eda_setup_remediation_playbooks | length }}"
       - ""
       - "Start the rulebook with:"
-      - "  ansible-rulebook --rulebook {{ eda_rulebook_path }} -i inventory"
+      - "  ansible-rulebook --rulebook {{ eda_setup_rulebook_path }} -i inventory"

@@ -3,7 +3,7 @@
 pagerduty_api_token: ""
 
 # Incident to respond to (required)
-incident_id: ""
+incident_response_incident_id: ""
 
 # Actions to perform on the incident
 # Choices: acknowledge, add_note, run_diagnostics, resolve
@@ -13,10 +13,10 @@ incident_id: ""
 #     - add_note
 #     - run_diagnostics
 #     - resolve
-actions: []
+incident_response_actions: []
 
 # Content for the incident note (used with add_note action)
-note_content: ""
+incident_response_note_content: ""
 
 # Diagnostic commands to run (used with run_diagnostics action)
 # Results are posted as incident notes
@@ -26,7 +26,7 @@ note_content: ""
 #     - "df -h"
 #     - "free -m"
 #     - "tail -50 /var/log/syslog"
-diagnostic_commands: []
+incident_response_diagnostic_commands: []
 
 # Resolution message (used with resolve action)
-resolve_message: "Incident resolved via automated response"
+incident_response_resolve_message: "Incident resolved via automated response"

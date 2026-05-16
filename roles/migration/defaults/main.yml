@@ -9,7 +9,7 @@ migration_action: "audit"
 
 # Specific legacy ruleset ID to migrate (optional)
 # If not specified, all rulesets will be processed
-legacy_ruleset_id: ""
+migration_legacy_ruleset_id: ""
 
 # Whether to disable the legacy ruleset after migration
-disable_legacy_after_migration: true
+migration_disable_legacy: true

@@ -3,23 +3,23 @@
 pagerduty_api_token: ""
 
 # Service configuration
-service_name: ""
-service_description: ""
-escalation_policy_name: ""
+service_onboard_name: ""
+service_onboard_description: ""
+service_onboard_escalation_policy: ""
 
 # Schedule configuration (optional - only created if schedule_users is provided)
-schedule_name: ""
-schedule_time_zone: "UTC"
-schedule_users: []
-rotation_turn_length_seconds: 604800  # 1 week
+service_onboard_schedule_name: ""
+service_onboard_schedule_tz: "UTC"
+service_onboard_schedule_users: []
+service_onboard_rotation_seconds: 604800  # 1 week
 
 # Integration configuration
-integration_type: "events_api_v2_inbound_integration"
+service_onboard_integration_type: "events_api_v2_inbound_integration"
 
 # Service behavior
-alert_creation: "create_alerts_and_incidents"
-auto_resolve_timeout: 14400    # 4 hours in seconds
-acknowledgement_timeout: 1800  # 30 minutes in seconds
+service_onboard_alert_creation: "create_alerts_and_incidents"
+service_onboard_auto_resolve: 14400    # 4 hours in seconds
+service_onboard_ack_timeout: 1800  # 30 minutes in seconds
 
 # Tags to apply to the service
 # Example:
@@ -27,4 +27,4 @@ acknowledgement_timeout: 1800  # 30 minutes in seconds
 #     - production
 #     - tier-1
 #     - platform
-tags: []
+service_onboard_tags: []

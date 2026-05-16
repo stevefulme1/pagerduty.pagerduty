@@ -4,16 +4,16 @@ pagerduty_api_token: ""
 
 # Teams to create
 # Example:
-#   pagerduty_teams:
+#   setup_teams:
 #     - name: Platform Engineering
 #       description: Infrastructure and platform team
 #     - name: Application Support
 #       description: Application support and on-call
-pagerduty_teams: []
+setup_teams: []
 
 # Users to create and configure
 # Example:
-#   pagerduty_users:
+#   setup_users:
 #     - name: Jane Doe
 #       email: jane.doe@example.com
 #       role: user
@@ -41,11 +41,11 @@ pagerduty_teams: []
 #           contact_method_type: phone_contact_method
 #           contact_method_label: Mobile
 #           urgency: high
-pagerduty_users: []
+setup_users: []
 
 # Escalation policies to create
 # Example:
-#   pagerduty_escalation_policies:
+#   setup_escalation_policies:
 #     - name: Platform Escalation
 #       description: Escalation policy for platform services
 #       num_loops: 3
@@ -58,4 +58,4 @@ pagerduty_users: []
 #           targets:
 #             - type: schedule_reference
 #               name: Platform On-Call Schedule
-pagerduty_escalation_policies: []
+setup_escalation_policies: []

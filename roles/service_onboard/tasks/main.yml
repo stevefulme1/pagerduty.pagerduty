@@ -21,11 +21,11 @@
 
     - name: Create schedule
       pagerduty.pagerduty.schedule:
-        token: "{{ pagerduty_api_token }}"
+        api_token: "{{ pagerduty_api_token }}"
         name: "{{ _schedule_name }}"
-        time_zone: "{{ schedule_time_zone }}"
-        users: "{{ schedule_users }}"
-        rotation_turn_length_seconds: "{{ rotation_turn_length_seconds }}"
+        time_zone: "{{ service_onboard_schedule_tz }}"
+        users: "{{ service_onboard_schedule_users }}"
+        rotation_turn_length_seconds: "{{ service_onboard_rotation_seconds }}"
         state: present
       register: _onboard_schedule
 
@@ -37,9 +37,9 @@
 
 - name: Ensure escalation policy exists
   pagerduty.pagerduty.escalation_policy:
-    token: "{{ pagerduty_api_token }}"
-    name: "{{ escalation_policy_name }}"
-    description: "Escalation policy for {{ service_name }}"
+    api_token: "{{ pagerduty_api_token }}"
+    name: "{{ service_onboard_escalation_policy }}"
+    description: "Escalation policy for {{ service_onboard_name }}"
     num_loops: 3
     rules:
       - escalation_delay_in_minutes: 15
@@ -54,13 +54,13 @@
 
 - name: Create service
   pagerduty.pagerduty.service:
-    token: "{{ pagerduty_api_token }}"
-    name: "{{ service_name }}"
+    api_token: "{{ pagerduty_api_token }}"
+    name: "{{ service_onboard_name }}"
     description: "{{ service_description | default(omit) }}"
-    escalation_policy_name: "{{ escalation_policy_name }}"
-    alert_creation: "{{ alert_creation }}"
-    auto_resolve_timeout: "{{ auto_resolve_timeout }}"
-    acknowledgement_timeout: "{{ acknowledgement_timeout }}"
+    escalation_policy_name: "{{ service_onboard_escalation_policy }}"
+    alert_creation: "{{ service_onboard_alert_creation }}"
+    auto_resolve_timeout: "{{ service_onboard_auto_resolve }}"
+    acknowledgement_timeout: "{{ service_onboard_ack_timeout }}"
     state: present
   register: _onboard_service
 
@@ -68,10 +68,10 @@
 
 - name: Create service integration
   pagerduty.pagerduty.integration:
-    token: "{{ pagerduty_api_token }}"
-    service_name: "{{ service_name }}"
-    type: "{{ integration_type }}"
-    name: "{{ service_name }} Integration"
+    api_token: "{{ pagerduty_api_token }}"
+    service_name: "{{ service_onboard_name }}"
+    type: "{{ service_onboard_integration_type }}"
+    name: "{{ service_onboard_name }} Integration"
     state: present
   register: _onboard_integration
 
@@ -83,12 +83,12 @@
 
 - name: Apply tags to service
   pagerduty.pagerduty.tag:
-    token: "{{ pagerduty_api_token }}"
+    api_token: "{{ pagerduty_api_token }}"
     label: "{{ item }}"
     entity_type: service
-    entity_name: "{{ service_name }}"
+    entity_name: "{{ service_onboard_name }}"
     state: present
-  loop: "{{ tags }}"
+  loop: "{{ service_onboard_tags }}"
   loop_control:
     label: "{{ item }}"
   when: tags | length > 0
@@ -99,9 +99,9 @@
   ansible.builtin.debug:
     msg:
       - "Service onboarding complete:"
-      - "  Service: {{ service_name }}"
-      - "  Escalation Policy: {{ escalation_policy_name }}"
-      - "  Integration Type: {{ integration_type }}"
+      - "  Service: {{ service_onboard_name }}"
+      - "  Escalation Policy: {{ service_onboard_escalation_policy }}"
+      - "  Integration Type: {{ service_onboard_integration_type }}"
       - "  Integration Key: {{ onboard_integration_key }}"
       - "  Tags: {{ tags | join(', ') if tags | length > 0 else 'none' }}"
       - ""
