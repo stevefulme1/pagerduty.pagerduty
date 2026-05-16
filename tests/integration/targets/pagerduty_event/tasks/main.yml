@@ -1,0 +1,54 @@
+---
+- name: Set test variables
+  ansible.builtin.set_fact:
+    test_routing_key: "{{ lookup('env', 'PAGERDUTY_TEST_ROUTING_KEY') | default('R0000000000000000000000000000000', true) }}"
+    test_dedup_key: "ansible-test-{{ lookup('password', '/dev/null chars=ascii_lowercase length=10') }}"
+
+- name: Test pagerduty_event lifecycle
+  block:
+    - name: Trigger event
+      pagerduty.pagerduty.event:
+        routing_key: "{{ test_routing_key }}"
+        event_action: trigger
+        dedup_key: "{{ test_dedup_key }}"
+        summary: "Integration test event"
+        source: "ansible-test"
+        severity: warning
+      register: trigger_result
+
+    - name: Assert event triggered
+      ansible.builtin.assert:
+        that:
+          - trigger_result is changed
+
+    - name: Acknowledge event
+      pagerduty.pagerduty.event:
+        routing_key: "{{ test_routing_key }}"
+        event_action: acknowledge
+        dedup_key: "{{ test_dedup_key }}"
+      register: ack_result
+
+    - name: Assert event acknowledged
+      ansible.builtin.assert:
+        that:
+          - ack_result is changed
+
+    - name: Resolve event
+      pagerduty.pagerduty.event:
+        routing_key: "{{ test_routing_key }}"
+        event_action: resolve
+        dedup_key: "{{ test_dedup_key }}"
+      register: resolve_result
+
+    - name: Assert event resolved
+      ansible.builtin.assert:
+        that:
+          - resolve_result is changed
+
+  always:
+    - name: Ensure event is resolved (cleanup)
+      pagerduty.pagerduty.event:
+        routing_key: "{{ test_routing_key }}"
+        event_action: resolve
+        dedup_key: "{{ test_dedup_key }}"
+      ignore_errors: true

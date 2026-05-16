@@ -89,7 +89,6 @@ def resolve_tag(pd, tag_input):
 def resolve_entity(pd, entity_type, entity_input):
     """Resolve an entity name or ID to its ID."""
     api_path = '/{0}'.format(entity_type)
-    ref_type = ENTITY_TYPE_MAP[entity_type][1]
     # Try as ID first
     existing = pd.client.find_by_id('{0}/{1}'.format(api_path, entity_input), entity_type.rstrip('s'))
     if existing:

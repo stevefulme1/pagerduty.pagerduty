@@ -21,3 +21,8 @@ issues: https://github.com/ansible-collections/pagerduty.pagerduty/issues
 build_ignore:
   - tests/output
   - '*.tar.gz'
+  - .github
+  - .yamllint
+  - .ansible-lint
+  - Makefile
+  - CONTRIBUTING.md
