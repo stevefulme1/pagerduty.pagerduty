@@ -1,0 +1,74 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, print_function
+__metaclass__ = type
+
+DOCUMENTATION = r'''
+---
+module: maintenance_window_info
+short_description: List PagerDuty maintenance windows
+description:
+  - Retrieves maintenance windows from PagerDuty.
+  - Can filter by service IDs and state (ongoing, future, past).
+options:
+  service_ids:
+    description: Filter to maintenance windows for these service IDs.
+    type: list
+    elements: str
+  state:
+    description: Filter by maintenance window state.
+    type: str
+    choices: [ongoing, future, past, all]
+    default: all
+extends_documentation_fragment:
+  - pagerduty.pagerduty.pagerduty
+'''
+
+EXAMPLES = r'''
+- name: List all ongoing maintenance windows
+  pagerduty.pagerduty.maintenance_window_info:
+    api_token: "{{ pd_token }}"
+    state: ongoing
+'''
+
+RETURN = r'''
+maintenance_windows:
+  description: List of maintenance windows.
+  type: list
+  returned: always
+'''
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
+    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+)
+
+
+def main():
+    argument_spec = dict(
+        service_ids=dict(type='list', elements='str'),
+        state=dict(type='str', default='all', choices=['ongoing', 'future', 'past', 'all']),
+        **PAGERDUTY_COMMON_ARGS,
+    )
+
+    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
+    pd = PagerDutyModule(module)
+
+    try:
+        params = {}
+        if module.params['service_ids']:
+            for i, sid in enumerate(module.params['service_ids']):
+                params['service_ids[]'.format(i)] = sid
+        if module.params['state'] != 'all':
+            params['filter'] = module.params['state']
+
+        windows = pd.client.list_all('/maintenance_windows', 'maintenance_windows', params=params)
+        pd.result['maintenance_windows'] = windows
+    except PagerDutyError as e:
+        pd.fail('Failed to list maintenance windows: {0}'.format(str(e)))
+
+    pd.exit()
+
+
+if __name__ == '__main__':
+    main()

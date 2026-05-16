@@ -1,2 +1,0 @@
-plugins/event_source/pagerduty_webhook.py import-error  # aiohttp not available in sanity venv
-plugins/event_source/pagerduty_api.py import-error  # aiohttp not available in sanity venv

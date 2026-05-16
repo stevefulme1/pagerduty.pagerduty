@@ -15,7 +15,7 @@
   when: migration_action == 'audit'
   block:
     - name: List all rulesets
-      pagerduty.pagerduty.ruleset_info:
+      pagerduty.pagerduty.event_orchestration_info:
         api_token: "{{ migration_api_token }}"
       register: migration_rulesets
 
@@ -72,7 +72,7 @@
   when: migration_action == 'migrate'
   block:
     - name: List rulesets to migrate
-      pagerduty.pagerduty.ruleset_info:
+      pagerduty.pagerduty.event_orchestration_info:
         api_token: "{{ migration_api_token }}"
       register: migration_rulesets
 

@@ -6,7 +6,7 @@
   pagerduty.pagerduty.ruleset_rule_info:
     api_token: "{{ migration_api_token }}"
     ruleset_id: "{{ _ruleset.id }}"
-  register: migrationmigration_ruleset_rules
+  register: migration_ruleset_rules
 
 - name: "Display rules found for {{ _ruleset.name | default(_ruleset.id) }}"
   ansible.builtin.debug:
@@ -45,7 +45,7 @@
     id: "{{ _ruleset.id }}"
     state: disabled
   when: migration_disable_legacy | bool
-  register: migrationmigration_ruleset_disabled
+  register: migration_ruleset_disabled
 
 - name: "Display migration status for {{ _ruleset.name | default(_ruleset.id) }}"
   ansible.builtin.debug:

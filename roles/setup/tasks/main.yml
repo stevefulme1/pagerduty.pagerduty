@@ -53,7 +53,7 @@
 # --- Contact Methods ---
 
 - name: Create contact methods for users
-  pagerduty.pagerduty.contact_method:
+  pagerduty.pagerduty.user_contact_method:
     api_token: "{{ setup_api_token }}"
     user_name: "{{ item.0.name }}"
     type: "{{ item.1.type }}"
@@ -68,7 +68,7 @@
 # --- Notification Rules ---
 
 - name: Create notification rules for users
-  pagerduty.pagerduty.notification_rule:
+  pagerduty.pagerduty.user_notification_rule:
     api_token: "{{ setup_api_token }}"
     user_name: "{{ item.0.name }}"
     start_delay_in_minutes: "{{ item.1.start_delay_in_minutes }}"

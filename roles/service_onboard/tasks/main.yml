@@ -67,7 +67,7 @@
 # --- Integration ---
 
 - name: Create service integration
-  pagerduty.pagerduty.integration:
+  pagerduty.pagerduty.service_integration:
     api_token: "{{ service_onboard_api_token }}"
     service_name: "{{ service_onboard_name }}"
     type: "{{ serviceservice_onboard_integ_type }}"

@@ -20,7 +20,7 @@ galaxy_info:
   galaxy_tags:
     - pagerduty
     - eda
-    - event_driven
+    - eventdriven
     - webhook
     - rulebook
     - automation

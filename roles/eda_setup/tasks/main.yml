@@ -18,7 +18,6 @@
         api_token: "{{ eda_setup_api_token }}"
         description: "EDA webhook for event-driven automation"
         delivery_method_url: "{{ eda_setup_webhook_url }}"
-        delivery_method_secret: "{{ eda_setup_webhook_secret | default(omit) }}"
         events: "{{ eda_setup_event_types }}"
         state: present
       register: eda_setup_webhook_result

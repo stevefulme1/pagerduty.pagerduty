@@ -74,7 +74,7 @@
         state: present
 
     - name: Execute diagnostic commands
-      ansible.builtin.shell: "{{ item }}"
+      ansible.builtin.command: "{{ item }}"
       loop: "{{ incident_response_diagnostic_commands }}"
       loop_control:
         label: "{{ item }}"
