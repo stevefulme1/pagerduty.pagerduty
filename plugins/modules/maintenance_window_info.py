@@ -57,8 +57,8 @@ def main():
     try:
         params = {}
         if module.params['service_ids']:
-            for i, sid in enumerate(module.params['service_ids']):
-                params['service_ids[]'.format(i)] = sid
+            for sid in module.params['service_ids']:
+                params['service_ids[]'] = sid
         if module.params['state'] != 'all':
             params['filter'] = module.params['state']
 
