@@ -13,7 +13,7 @@ description:
   - Create and remove dependencies between PagerDuty services.
   - Supports both technical services and business services.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   dependent_service:
     description: Name or ID of the dependent (upstream) service.

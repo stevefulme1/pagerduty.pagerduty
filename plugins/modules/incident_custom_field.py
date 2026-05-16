@@ -11,7 +11,7 @@ short_description: Manage PagerDuty incident custom fields
 description:
   - Create, update, and delete custom fields on incidents in PagerDuty.
 version_added: "1.0.0"
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
 options:
   name:
     description: The API name of the custom field (machine-readable).

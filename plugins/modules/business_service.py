@@ -13,7 +13,7 @@ description:
   - Create, update, and delete PagerDuty business services.
   - Business services represent high-level business capabilities.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   id:
     description: Business service ID for updates or deletion.

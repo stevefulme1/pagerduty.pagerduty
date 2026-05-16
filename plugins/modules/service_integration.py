@@ -11,7 +11,7 @@ short_description: Manage PagerDuty service integrations
 description:
   - Create, update, or delete integrations on a PagerDuty service.
 version_added: "1.0.0"
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
 options:
   service:
     description: The service name or ID to add the integration to.

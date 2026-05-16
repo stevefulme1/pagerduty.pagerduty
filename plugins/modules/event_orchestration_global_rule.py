@@ -13,7 +13,7 @@ description:
   - Configure global rules for a PagerDuty event orchestration.
   - Global rules apply transformations before routing.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   orchestration:
     description: Event orchestration name or ID.

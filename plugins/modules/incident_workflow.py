@@ -12,7 +12,7 @@ description:
   - Create, update, and delete incident workflows in PagerDuty.
   - Incident workflows automate actions during incident response.
 version_added: "1.0.0"
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
 options:
   name:
     description: The name of the incident workflow.

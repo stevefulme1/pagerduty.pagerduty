@@ -13,7 +13,7 @@ description:
   - Add a note to an existing PagerDuty incident.
   - This module only supports state=present since notes cannot be deleted.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   incident:
     description: The incident ID to add the note to.

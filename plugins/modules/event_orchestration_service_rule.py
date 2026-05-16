@@ -13,7 +13,7 @@ description:
   - Configure service-level event orchestration rules.
   - These rules apply to events after they have been routed to a specific service.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   service:
     description: Service name or ID.

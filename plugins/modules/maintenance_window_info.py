@@ -8,6 +8,7 @@ DOCUMENTATION = r'''
 ---
 module: maintenance_window_info
 short_description: List PagerDuty maintenance windows
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 description:
   - Retrieves maintenance windows from PagerDuty.
   - Can filter by service IDs and state (ongoing, future, past).

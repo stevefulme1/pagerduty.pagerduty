@@ -13,7 +13,7 @@ description:
   - Configure router rules for a PagerDuty event orchestration.
   - Router rules determine which service an event is routed to.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   orchestration:
     description: Event orchestration name or ID.

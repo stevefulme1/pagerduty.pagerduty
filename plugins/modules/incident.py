@@ -13,7 +13,7 @@ description:
   - Create, update, and resolve PagerDuty incidents.
   - For updates, the C(id) parameter is required.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   id:
     description: Incident ID for updates.
@@ -147,7 +147,7 @@ def main():
         body=dict(type='str'),
         escalation_policy=dict(type='str'),
         priority=dict(type='str'),
-        incident_key=dict(type='str'),
+        incident_key=dict(type='str', no_log=False),
         status=dict(type='str', choices=['triggered', 'acknowledged', 'resolved']),
         assignments=dict(type='list', elements='str'),
         state=dict(type='str', default='present', choices=['present', 'absent']),

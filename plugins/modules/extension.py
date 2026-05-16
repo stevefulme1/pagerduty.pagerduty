@@ -11,7 +11,7 @@ short_description: Manage PagerDuty extensions
 description:
   - Create, update, and delete extensions (webhooks on services) in PagerDuty.
 version_added: "1.0.0"
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
 options:
   name:
     description: The name of the extension.

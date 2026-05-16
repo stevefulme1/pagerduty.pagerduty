@@ -12,7 +12,7 @@ description:
   - Create and delete tags in PagerDuty.
   - Tags can be assigned to users, teams, and escalation policies.
 version_added: "1.0.0"
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
 options:
   label:
     description: The label for the tag.

@@ -13,7 +13,7 @@ description:
   - Create, update, and delete integrations for event orchestrations.
   - Each integration provides a unique routing key for sending events.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   id:
     description: Integration ID for updates or deletion.

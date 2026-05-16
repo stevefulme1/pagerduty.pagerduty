@@ -11,7 +11,7 @@ short_description: Manage PagerDuty schedule overrides
 description:
   - Create or delete overrides on a PagerDuty on-call schedule.
 version_added: "1.0.0"
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
 options:
   schedule:
     description: The schedule name or ID.

@@ -11,7 +11,7 @@ short_description: Manage PagerDuty users
 description:
   - Create, update, or delete PagerDuty users.
 version_added: "1.0.0"
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
 options:
   name:
     description: The name of the user.

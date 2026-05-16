@@ -13,7 +13,7 @@ description:
   - Create, update, and delete PagerDuty maintenance windows.
   - Maintenance windows temporarily disable alerts for specified services.
 version_added: "1.0.0"
-author: "PagerDuty Collection Authors"
+author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
   id:
     description: Maintenance window ID for updates or deletion.
