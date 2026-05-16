@@ -5,10 +5,10 @@
 - name: Validate required variables
   ansible.builtin.assert:
     that:
-      - pagerduty_api_token | length > 0
+      - service_onboard_api_token | length > 0
       - service_name | length > 0
       - escalation_policy_name | length > 0
-    fail_msg: "pagerduty_api_token, service_name, and escalation_policy_name must be set"
+    fail_msg: "service_onboard_api_token, service_name, and escalation_policy_name must be set"
 
 # --- Schedule (optional) ---
 
@@ -21,13 +21,13 @@
 
     - name: Create schedule
       pagerduty.pagerduty.schedule:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ service_onboard_api_token }}"
         name: "{{ _schedule_name }}"
-        time_zone: "{{ service_onboard_schedule_tz }}"
-        users: "{{ service_onboard_schedule_users }}"
+        time_zone: "{{ serviceservice_onboard_schedule_tz }}"
+        users: "{{ serviceservice_onboard_schedule_users }}"
         rotation_turn_length_seconds: "{{ service_onboard_rotation_seconds }}"
         state: present
-      register: _onboard_schedule
+      register: serviceservice_onboard_schedule
 
     - name: Display schedule info
       ansible.builtin.debug:
@@ -37,8 +37,8 @@
 
 - name: Ensure escalation policy exists
   pagerduty.pagerduty.escalation_policy:
-    api_token: "{{ pagerduty_api_token }}"
-    name: "{{ service_onboard_escalation_policy }}"
+    api_token: "{{ service_onboard_api_token }}"
+    name: "{{ serviceservice_onboard_ep }}"
     description: "Escalation policy for {{ service_onboard_name }}"
     num_loops: 3
     rules:
@@ -47,43 +47,43 @@
           - type: "{{ 'schedule_reference' if (schedule_users | length > 0) else 'user_reference' }}"
             name: "{{ _schedule_name | default(schedule_users[0] | default('')) }}"
     state: present
-  register: _onboard_escalation_policy
+  register: service_onboard_ep
   when: escalation_policy_name | length > 0
 
 # --- Service ---
 
 - name: Create service
   pagerduty.pagerduty.service:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ service_onboard_api_token }}"
     name: "{{ service_onboard_name }}"
     description: "{{ service_description | default(omit) }}"
-    escalation_policy_name: "{{ service_onboard_escalation_policy }}"
+    escalation_policy_name: "{{ serviceservice_onboard_ep }}"
     alert_creation: "{{ service_onboard_alert_creation }}"
     auto_resolve_timeout: "{{ service_onboard_auto_resolve }}"
     acknowledgement_timeout: "{{ service_onboard_ack_timeout }}"
     state: present
-  register: _onboard_service
+  register: service_onboard_svc
 
 # --- Integration ---
 
 - name: Create service integration
   pagerduty.pagerduty.integration:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ service_onboard_api_token }}"
     service_name: "{{ service_onboard_name }}"
-    type: "{{ service_onboard_integration_type }}"
+    type: "{{ serviceservice_onboard_integ_type }}"
     name: "{{ service_onboard_name }} Integration"
     state: present
-  register: _onboard_integration
+  register: service_onboard_integ
 
 - name: Store integration key
   ansible.builtin.set_fact:
-    onboard_integration_key: "{{ _onboard_integration.integration.integration_key | default(_onboard_integration.integration_key | default('')) }}"
+    onboard_integration_key: "{{ service_onboard_integ.integration.integration_key | default(service_onboard_integ.integration_key | default('')) }}"
 
 # --- Tags ---
 
 - name: Apply tags to service
   pagerduty.pagerduty.tag:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ service_onboard_api_token }}"
     label: "{{ item }}"
     entity_type: service
     entity_name: "{{ service_onboard_name }}"
@@ -100,8 +100,8 @@
     msg:
       - "Service onboarding complete:"
       - "  Service: {{ service_onboard_name }}"
-      - "  Escalation Policy: {{ service_onboard_escalation_policy }}"
-      - "  Integration Type: {{ service_onboard_integration_type }}"
+      - "  Escalation Policy: {{ serviceservice_onboard_ep }}"
+      - "  Integration Type: {{ serviceservice_onboard_integ_type }}"
       - "  Integration Key: {{ onboard_integration_key }}"
       - "  Tags: {{ tags | join(', ') if tags | length > 0 else 'none' }}"
       - ""

@@ -1,6 +1,6 @@
 ---
 # PagerDuty API authentication token
-pagerduty_api_token: ""
+migration_api_token: ""
 
 # Action to perform: audit or migrate
 # audit  - List all rulesets and rules, output migration report

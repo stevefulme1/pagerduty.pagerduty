@@ -5,9 +5,9 @@
 - name: Validate required variables
   ansible.builtin.assert:
     that:
-      - pagerduty_api_token | length > 0
+      - migration_api_token | length > 0
       - migration_action in ['audit', 'migrate']
-    fail_msg: "pagerduty_api_token must be set and migration_action must be 'audit' or 'migrate'"
+    fail_msg: "migration_api_token must be set and migration_action must be 'audit' or 'migrate'"
 
 # === AUDIT ===
 
@@ -16,22 +16,22 @@
   block:
     - name: List all rulesets
       pagerduty.pagerduty.ruleset_info:
-        api_token: "{{ pagerduty_api_token }}"
-      register: _migration_rulesets
+        api_token: "{{ migration_api_token }}"
+      register: migration_rulesets
 
     - name: Display rulesets found
       ansible.builtin.debug:
-        msg: "Found {{ _migration_rulesets.rulesets | default([]) | length }} legacy ruleset(s)"
+        msg: "Found {{ migration_rulesets.rulesets | default([]) | length }} legacy ruleset(s)"
 
     - name: Get rules for each ruleset
       pagerduty.pagerduty.ruleset_rule_info:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ migration_api_token }}"
         ruleset_id: "{{ item.id }}"
-      loop: "{{ _migration_rulesets.rulesets | default([]) }}"
+      loop: "{{ migration_rulesets.rulesets | default([]) }}"
       loop_control:
         label: "{{ item.name | default(item.id) }}"
-      register: _migration_rules
-      when: _migration_rulesets.rulesets | default([]) | length > 0
+      register: migration_rules
+      when: migration_rulesets.rulesets | default([]) | length > 0
 
     - name: Build audit report
       ansible.builtin.set_fact:
@@ -40,13 +40,13 @@
           LEGACY RULESET MIGRATION AUDIT REPORT
           ========================================
           Date: {{ ansible_date_time.iso8601 }}
-          Total Rulesets: {{ _migration_rulesets.rulesets | default([]) | length }}
+          Total Rulesets: {{ migration_rulesets.rulesets | default([]) | length }}
 
-          {% for ruleset in _migration_rulesets.rulesets | default([]) %}
+          {% for ruleset in migration_rulesets.rulesets | default([]) %}
           ----------------------------------------
           Ruleset: {{ ruleset.name | default('Unnamed') }}
           ID: {{ ruleset.id }}
-          {% set rules = _migration_rules.results[loop.index0].rules | default([]) if _migration_rules.results is defined else [] %}
+          {% set rules = migration_rules.results[loop.index0].rules | default([]) if migration_rules.results is defined else [] %}
           Rules: {{ rules | length }}
           {% for rule in rules %}
             Rule {{ loop.index }}: {{ rule.id }}
@@ -73,16 +73,16 @@
   block:
     - name: List rulesets to migrate
       pagerduty.pagerduty.ruleset_info:
-        api_token: "{{ pagerduty_api_token }}"
-      register: _migration_rulesets
+        api_token: "{{ migration_api_token }}"
+      register: migration_rulesets
 
     - name: Filter to specific ruleset if specified
       ansible.builtin.set_fact:
         _rulesets_to_migrate: >-
-          {{ _migration_rulesets.rulesets | default([])
+          {{ migration_rulesets.rulesets | default([])
              | selectattr('id', 'equalto', migration_legacy_ruleset_id) | list
              if migration_legacy_ruleset_id | length > 0
-             else _migration_rulesets.rulesets | default([]) }}
+             else migration_rulesets.rulesets | default([]) }}
 
     - name: Display migration plan
       ansible.builtin.debug:

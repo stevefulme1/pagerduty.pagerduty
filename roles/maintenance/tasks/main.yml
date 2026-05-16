@@ -5,10 +5,10 @@
 - name: Validate required variables
   ansible.builtin.assert:
     that:
-      - pagerduty_api_token | length > 0
+      - maintenance_api_token | length > 0
       - maintenance_action in ['create', 'end']
       - maintenance_services | length > 0
-    fail_msg: "pagerduty_api_token, maintenance_action (create/end), and maintenance_services must be set"
+    fail_msg: "maintenance_api_token, maintenance_action (create/end), and maintenance_services must be set"
 
 # === CREATE MAINTENANCE WINDOW ===
 
@@ -46,19 +46,19 @@
 
     - name: Create maintenance window
       pagerduty.pagerduty.maintenance_window:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ maintenance_api_token }}"
         description: "{{ maintenance_description }}"
         service_names: "{{ maintenance_services }}"
         start_time: "{{ _maintenance_start }}"
         end_time: "{{ _maintenance_end }}"
         state: present
-      register: _maintenance_create
+      register: maintenance_create_result
 
     - name: Display maintenance window created
       ansible.builtin.debug:
         msg:
           - "Maintenance window created successfully"
-          - "  ID: {{ _maintenance_create.maintenance_window.id | default('unknown') }}"
+          - "  ID: {{ maintenance_create_result.maintenance_window.id | default('unknown') }}"
           - "  Services: {{ maintenance_services | join(', ') }}"
   rescue:
     - name: Maintenance window creation failed
@@ -72,14 +72,14 @@
   block:
     - name: List active maintenance windows
       pagerduty.pagerduty.maintenance_window_info:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ maintenance_api_token }}"
         state: ongoing
-      register: _maintenance_list
+      register: maintenance_list_result
 
     - name: Identify maintenance windows for target services
       ansible.builtin.set_fact:
         _windows_to_end: >-
-          {{ _maintenance_list.maintenance_windows | default([])
+          {{ maintenance_list_result.maintenance_windows | default([])
              | selectattr('services', 'defined')
              | list }}
 
@@ -91,13 +91,13 @@
 
     - name: End matching maintenance windows
       pagerduty.pagerduty.maintenance_window:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ maintenance_api_token }}"
         id: "{{ item.id }}"
         state: absent
       loop: "{{ _windows_to_end }}"
       loop_control:
         label: "{{ item.id }} - {{ item.description | default('no description') }}"
-      register: _maintenance_end_results
+      register: maintenance_end_results
       when: _windows_to_end | length > 0
 
     - name: Display end results

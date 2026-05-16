@@ -1,6 +1,6 @@
 ---
 # PagerDuty API authentication token
-pagerduty_api_token: ""
+incident_response_api_token: ""
 
 # Incident to respond to (required)
 incident_response_incident_id: ""

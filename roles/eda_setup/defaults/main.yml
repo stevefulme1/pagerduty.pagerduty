@@ -1,6 +1,6 @@
 ---
 # PagerDuty API authentication token
-pagerduty_api_token: ""
+eda_setup_api_token: ""
 
 # EDA webhook listener configuration
 eda_setup_webhook_host: "0.0.0.0"

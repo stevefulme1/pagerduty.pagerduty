@@ -5,28 +5,28 @@
 - name: Validate required variables
   ansible.builtin.assert:
     that:
-      - pagerduty_api_token | length > 0
-    fail_msg: "pagerduty_api_token must be set"
+      - setup_api_token | length > 0
+    fail_msg: "setup_api_token must be set"
 
 # --- Teams ---
 
 - name: Create teams
   pagerduty.pagerduty.team:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ setup_api_token }}"
     name: "{{ item.name }}"
     description: "{{ item.description | default(omit) }}"
     state: present
   loop: "{{ setup_teams }}"
   loop_control:
     label: "{{ item.name }}"
-  register: _setup_teams
+  register: setup_setup_teams
   when: setup_teams | length > 0
 
 # --- Users ---
 
 - name: Create users
   pagerduty.pagerduty.user:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ setup_api_token }}"
     name: "{{ item.name }}"
     email: "{{ item.email }}"
     role: "{{ item.role | default('user') }}"
@@ -35,12 +35,12 @@
   loop: "{{ setup_users }}"
   loop_control:
     label: "{{ item.name }} <{{ item.email }}>"
-  register: _setup_users
+  register: setup_setup_users
   when: setup_users | length > 0
 
 - name: Add users to teams
   pagerduty.pagerduty.team_membership:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ setup_api_token }}"
     user_name: "{{ item.0.name }}"
     team_name: "{{ item.1 }}"
     role: "{{ item.0.team_role | default('responder') }}"
@@ -54,7 +54,7 @@
 
 - name: Create contact methods for users
   pagerduty.pagerduty.contact_method:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ setup_api_token }}"
     user_name: "{{ item.0.name }}"
     type: "{{ item.1.type }}"
     address: "{{ item.1.address }}"
@@ -69,7 +69,7 @@
 
 - name: Create notification rules for users
   pagerduty.pagerduty.notification_rule:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ setup_api_token }}"
     user_name: "{{ item.0.name }}"
     start_delay_in_minutes: "{{ item.1.start_delay_in_minutes }}"
     contact_method_type: "{{ item.1.contact_method_type }}"
@@ -84,7 +84,7 @@
 
 - name: Create escalation policies
   pagerduty.pagerduty.escalation_policy:
-    api_token: "{{ pagerduty_api_token }}"
+    api_token: "{{ setup_api_token }}"
     name: "{{ item.name }}"
     description: "{{ item.description | default(omit) }}"
     num_loops: "{{ item.num_loops | default(3) }}"
@@ -93,7 +93,7 @@
   loop: "{{ setup_escalation_policies }}"
   loop_control:
     label: "{{ item.name }}"
-  register: _setup_escalation_policies
+  register: setup_setup_escalation_policies
   when: setup_escalation_policies | length > 0
 
 - name: Display setup summary

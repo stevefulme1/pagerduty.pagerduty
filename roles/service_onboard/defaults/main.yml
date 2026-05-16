@@ -1,6 +1,6 @@
 ---
 # PagerDuty API authentication token
-pagerduty_api_token: ""
+service_onboard_api_token: ""
 
 # Service configuration
 service_onboard_name: ""

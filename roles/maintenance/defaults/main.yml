@@ -1,6 +1,6 @@
 ---
 # PagerDuty API authentication token
-pagerduty_api_token: ""
+maintenance_api_token: ""
 
 # Action to perform: create or end
 maintenance_action: "create"

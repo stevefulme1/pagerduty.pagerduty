@@ -5,9 +5,9 @@
 - name: Validate required variables
   ansible.builtin.assert:
     that:
-      - pagerduty_api_token | length > 0
+      - eda_setup_api_token | length > 0
       - eda_setup_webhook_url | length > 0
-    fail_msg: "pagerduty_api_token and eda_setup_webhook_url must be set"
+    fail_msg: "eda_setup_api_token and eda_setup_webhook_url must be set"
 
 # --- Webhook Subscription ---
 
@@ -15,13 +15,13 @@
   block:
     - name: Create webhook subscription
       pagerduty.pagerduty.webhook_subscription:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ eda_setup_api_token }}"
         description: "EDA webhook for event-driven automation"
         delivery_method_url: "{{ eda_setup_webhook_url }}"
         delivery_method_secret: "{{ eda_setup_webhook_secret | default(omit) }}"
         events: "{{ eda_setup_event_types }}"
         state: present
-      register: _eda_webhook
+      register: eda_setup_webhook_result
 
     - name: Display webhook subscription info
       ansible.builtin.debug:
@@ -29,7 +29,7 @@
           - "Webhook subscription created:"
           - "  URL: {{ eda_setup_webhook_url }}"
           - "  Events: {{ eda_setup_event_types | join(', ') }}"
-          - "  ID: {{ _eda_webhook.webhook_subscription.id | default('created') }}"
+          - "  ID: {{ eda_setup_webhook_result.webhook_subscription.id | default('created') }}"
   rescue:
     - name: Webhook creation failed
       ansible.builtin.fail:
@@ -48,7 +48,7 @@
     src: pagerduty_rulebook.yml.j2
     dest: "{{ eda_setup_rulebook_path }}"
     mode: "0644"
-  register: _eda_rulebook
+  register: eda_setup_rulebook_result
 
 - name: Display rulebook deployment info
   ansible.builtin.debug:

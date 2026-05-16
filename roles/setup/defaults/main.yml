@@ -1,6 +1,6 @@
 ---
 # PagerDuty API authentication token
-pagerduty_api_token: ""
+setup_api_token: ""
 
 # Teams to create
 # Example:

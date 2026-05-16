@@ -5,10 +5,10 @@
 - name: Validate required variables
   ansible.builtin.assert:
     that:
-      - pagerduty_api_token | length > 0
+      - incident_response_api_token | length > 0
       - incident_response_incident_id | length > 0
       - incident_response_actions | length > 0
-    fail_msg: "pagerduty_api_token, incident_response_incident_id, and incident_response_actions must be set"
+    fail_msg: "incident_response_api_token, incident_response_incident_id, and incident_response_actions must be set"
 
 - name: Validate actions list
   ansible.builtin.assert:
@@ -26,11 +26,11 @@
   block:
     - name: Set incident status to acknowledged
       pagerduty.pagerduty.incident:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ incident_response_api_token }}"
         id: "{{ incident_response_incident_id }}"
         status: acknowledged
         state: present
-      register: _response_acknowledge
+      register: incident_response_ack
 
     - name: Confirm acknowledgement
       ansible.builtin.debug:
@@ -47,11 +47,11 @@
   block:
     - name: Post note to incident
       pagerduty.pagerduty.incident_note:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ incident_response_api_token }}"
         incident: "{{ incident_response_incident_id }}"
         content: "{{ incident_response_note_content }}"
         state: present
-      register: _response_note
+      register: incident_response_note
 
     - name: Confirm note added
       ansible.builtin.debug:
@@ -68,7 +68,7 @@
   block:
     - name: Add diagnostic start note
       pagerduty.pagerduty.incident_note:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ incident_response_api_token }}"
         incident: "{{ incident_response_incident_id }}"
         content: "[Automated] Running {{ incident_response_diagnostic_commands | length }} diagnostic commands on {{ inventory_hostname }}"
         state: present
@@ -78,15 +78,15 @@
       loop: "{{ incident_response_diagnostic_commands }}"
       loop_control:
         label: "{{ item }}"
-      register: _response_diagnostics
+      register: incident_response_diags
       changed_when: false
       failed_when: false
 
     - name: Build diagnostic report
       ansible.builtin.set_fact:
-        _diagnostic_report: >-
+        incident_response_report: >-
           [Automated Diagnostics from {{ inventory_hostname }}]
-          {% for result in _response_diagnostics.results %}
+          {% for result in incident_response_diags.results %}
 
           === Command: {{ result.item }} ===
           Exit Code: {{ result.rc }}
@@ -100,9 +100,9 @@
 
     - name: Post diagnostic results as incident note
       pagerduty.pagerduty.incident_note:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ incident_response_api_token }}"
         incident: "{{ incident_response_incident_id }}"
-        content: "{{ _diagnostic_report }}"
+        content: "{{ incident_response_report }}"
         state: present
 
     - name: Confirm diagnostics posted
@@ -120,18 +120,18 @@
   block:
     - name: Add resolution note
       pagerduty.pagerduty.incident_note:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ incident_response_api_token }}"
         incident: "{{ incident_response_incident_id }}"
         content: "[Automated Resolution] {{ incident_response_resolve_message }}"
         state: present
 
     - name: Set incident status to resolved
       pagerduty.pagerduty.incident:
-        api_token: "{{ pagerduty_api_token }}"
+        api_token: "{{ incident_response_api_token }}"
         id: "{{ incident_response_incident_id }}"
         status: resolved
         state: present
-      register: _response_resolve
+      register: incident_response_resolve
 
     - name: Confirm resolution
       ansible.builtin.debug:
