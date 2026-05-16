@@ -12,7 +12,7 @@ description:
   - Create, update, and delete triggers for incident workflows.
   - Triggers determine when a workflow is automatically invoked.
 version_added: "1.0.0"
-author: PagerDuty Ansible Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   workflow:
     description: The name or ID of the incident workflow to trigger.

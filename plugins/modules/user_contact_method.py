@@ -11,7 +11,7 @@ short_description: Manage PagerDuty user contact methods
 description:
   - Create, update, or delete contact methods for a PagerDuty user.
 version_added: "1.0.0"
-author: PagerDuty Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   user:
     description: The user name, email, or ID.

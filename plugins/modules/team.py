@@ -11,7 +11,7 @@ short_description: Manage PagerDuty teams
 description:
   - Create, update, or delete PagerDuty teams.
 version_added: "1.0.0"
-author: PagerDuty Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   name:
     description: The name of the team.

@@ -11,7 +11,7 @@ short_description: Manage PagerDuty on-call schedules
 description:
   - Create, update, or delete PagerDuty on-call schedules.
 version_added: "1.0.0"
-author: PagerDuty Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   name:
     description: The name of the schedule.

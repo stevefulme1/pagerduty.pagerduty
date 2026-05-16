@@ -12,7 +12,7 @@ description:
   - Assign or remove tags from users, teams, or escalation policies.
   - Uses the PagerDuty tagging API.
 version_added: "1.0.0"
-author: PagerDuty Ansible Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   tag:
     description: The tag label or ID to assign.

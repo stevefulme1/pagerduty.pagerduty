@@ -17,7 +17,6 @@ options:
     description: The integration routing key (Events API v2).
     type: str
     required: true
-    no_log: true
   summary:
     description: A brief text summary of the change.
     type: str

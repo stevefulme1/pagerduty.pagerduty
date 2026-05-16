@@ -12,7 +12,7 @@ description:
   - Create, update, and delete automation action runners in PagerDuty.
   - Runners are execution environments that run automation actions.
 version_added: "1.0.0"
-author: PagerDuty Ansible Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   name:
     description: The name of the runner.

@@ -12,7 +12,7 @@ description:
   - Create, update, and delete automation actions in PagerDuty.
   - Automation actions run Process Automation jobs or scripts in response to incidents.
 version_added: "1.0.0"
-author: PagerDuty Ansible Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   name:
     description: The name of the automation action.

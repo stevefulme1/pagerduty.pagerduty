@@ -12,7 +12,7 @@ description:
   - Create, update, and delete response plays in PagerDuty.
   - Response plays automate incident response actions.
 version_added: "1.0.0"
-author: PagerDuty Ansible Collection Authors
+author: Ansible PagerDuty Collection Authors (@ansible-collections)
 options:
   name:
     description: The name of the response play.

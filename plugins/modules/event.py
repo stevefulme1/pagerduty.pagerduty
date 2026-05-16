@@ -17,7 +17,6 @@ options:
     description: The integration routing key (Events API v2).
     type: str
     required: true
-    no_log: true
   event_action:
     description: The type of event action.
     type: str
@@ -111,7 +110,7 @@ def main():
         argument_spec=dict(
             routing_key=dict(type='str', required=True, no_log=True),
             event_action=dict(type='str', required=True, choices=['trigger', 'acknowledge', 'resolve']),
-            dedup_key=dict(type='str'),
+            dedup_key=dict(type='str', no_log=False),
             summary=dict(type='str'),
             source=dict(type='str'),
             severity=dict(type='str', choices=['critical', 'error', 'warning', 'info']),
