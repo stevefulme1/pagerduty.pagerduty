@@ -1,0 +1,108 @@
+---
+# Role: service_onboard
+# Onboard a new PagerDuty service end-to-end
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - pagerduty_api_token | length > 0
+      - service_name | length > 0
+      - escalation_policy_name | length > 0
+    fail_msg: "pagerduty_api_token, service_name, and escalation_policy_name must be set"
+
+# --- Schedule (optional) ---
+
+- name: Create on-call schedule
+  when: schedule_users | length > 0
+  block:
+    - name: Set schedule name if not provided
+      ansible.builtin.set_fact:
+        _schedule_name: "{{ schedule_name if schedule_name | length > 0 else service_name + ' On-Call Schedule' }}"
+
+    - name: Create schedule
+      pagerduty.pagerduty.schedule:
+        token: "{{ pagerduty_api_token }}"
+        name: "{{ _schedule_name }}"
+        time_zone: "{{ schedule_time_zone }}"
+        users: "{{ schedule_users }}"
+        rotation_turn_length_seconds: "{{ rotation_turn_length_seconds }}"
+        state: present
+      register: _onboard_schedule
+
+    - name: Display schedule info
+      ansible.builtin.debug:
+        msg: "Created schedule: {{ _schedule_name }}"
+
+# --- Escalation Policy ---
+
+- name: Ensure escalation policy exists
+  pagerduty.pagerduty.escalation_policy:
+    token: "{{ pagerduty_api_token }}"
+    name: "{{ escalation_policy_name }}"
+    description: "Escalation policy for {{ service_name }}"
+    num_loops: 3
+    rules:
+      - escalation_delay_in_minutes: 15
+        targets:
+          - type: "{{ 'schedule_reference' if (schedule_users | length > 0) else 'user_reference' }}"
+            name: "{{ _schedule_name | default(schedule_users[0] | default('')) }}"
+    state: present
+  register: _onboard_escalation_policy
+  when: escalation_policy_name | length > 0
+
+# --- Service ---
+
+- name: Create service
+  pagerduty.pagerduty.service:
+    token: "{{ pagerduty_api_token }}"
+    name: "{{ service_name }}"
+    description: "{{ service_description | default(omit) }}"
+    escalation_policy_name: "{{ escalation_policy_name }}"
+    alert_creation: "{{ alert_creation }}"
+    auto_resolve_timeout: "{{ auto_resolve_timeout }}"
+    acknowledgement_timeout: "{{ acknowledgement_timeout }}"
+    state: present
+  register: _onboard_service
+
+# --- Integration ---
+
+- name: Create service integration
+  pagerduty.pagerduty.integration:
+    token: "{{ pagerduty_api_token }}"
+    service_name: "{{ service_name }}"
+    type: "{{ integration_type }}"
+    name: "{{ service_name }} Integration"
+    state: present
+  register: _onboard_integration
+
+- name: Store integration key
+  ansible.builtin.set_fact:
+    onboard_integration_key: "{{ _onboard_integration.integration.integration_key | default(_onboard_integration.integration_key | default('')) }}"
+
+# --- Tags ---
+
+- name: Apply tags to service
+  pagerduty.pagerduty.tag:
+    token: "{{ pagerduty_api_token }}"
+    label: "{{ item }}"
+    entity_type: service
+    entity_name: "{{ service_name }}"
+    state: present
+  loop: "{{ tags }}"
+  loop_control:
+    label: "{{ item }}"
+  when: tags | length > 0
+
+# --- Summary ---
+
+- name: Display onboarding summary
+  ansible.builtin.debug:
+    msg:
+      - "Service onboarding complete:"
+      - "  Service: {{ service_name }}"
+      - "  Escalation Policy: {{ escalation_policy_name }}"
+      - "  Integration Type: {{ integration_type }}"
+      - "  Integration Key: {{ onboard_integration_key }}"
+      - "  Tags: {{ tags | join(', ') if tags | length > 0 else 'none' }}"
+      - ""
+      - "Use this integration key to send events to PagerDuty."

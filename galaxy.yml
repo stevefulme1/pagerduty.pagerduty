@@ -1,0 +1,23 @@
+namespace: pagerduty
+name: pagerduty
+version: 1.0.0
+readme: README.md
+authors:
+  - Red Hat Ansible Team
+description: Ansible collection for managing PagerDuty resources, incidents, and event-driven automation
+license:
+  - GPL-3.0-or-later
+tags:
+  - pagerduty
+  - monitoring
+  - incident
+  - oncall
+  - eda
+  - event_driven
+repository: https://github.com/ansible-collections/pagerduty.pagerduty
+documentation: https://github.com/ansible-collections/pagerduty.pagerduty/blob/main/README.md
+homepage: https://github.com/ansible-collections/pagerduty.pagerduty
+issues: https://github.com/ansible-collections/pagerduty.pagerduty/issues
+build_ignore:
+  - tests/output
+  - '*.tar.gz'

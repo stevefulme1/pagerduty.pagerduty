@@ -1,0 +1,113 @@
+---
+# Role: migration
+# Migrate from legacy rulesets to event orchestration
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - pagerduty_api_token | length > 0
+      - migration_action in ['audit', 'migrate']
+    fail_msg: "pagerduty_api_token must be set and migration_action must be 'audit' or 'migrate'"
+
+# === AUDIT ===
+
+- name: Audit legacy rulesets
+  when: migration_action == 'audit'
+  block:
+    - name: List all rulesets
+      pagerduty.pagerduty.ruleset_info:
+        token: "{{ pagerduty_api_token }}"
+      register: _migration_rulesets
+
+    - name: Display rulesets found
+      ansible.builtin.debug:
+        msg: "Found {{ _migration_rulesets.rulesets | default([]) | length }} legacy ruleset(s)"
+
+    - name: Get rules for each ruleset
+      pagerduty.pagerduty.ruleset_rule_info:
+        token: "{{ pagerduty_api_token }}"
+        ruleset_id: "{{ item.id }}"
+      loop: "{{ _migration_rulesets.rulesets | default([]) }}"
+      loop_control:
+        label: "{{ item.name | default(item.id) }}"
+      register: _migration_rules
+      when: _migration_rulesets.rulesets | default([]) | length > 0
+
+    - name: Build audit report
+      ansible.builtin.set_fact:
+        _audit_report: |
+          ========================================
+          LEGACY RULESET MIGRATION AUDIT REPORT
+          ========================================
+          Date: {{ ansible_date_time.iso8601 }}
+          Total Rulesets: {{ _migration_rulesets.rulesets | default([]) | length }}
+
+          {% for ruleset in _migration_rulesets.rulesets | default([]) %}
+          ----------------------------------------
+          Ruleset: {{ ruleset.name | default('Unnamed') }}
+          ID: {{ ruleset.id }}
+          {% set rules = _migration_rules.results[loop.index0].rules | default([]) if _migration_rules.results is defined else [] %}
+          Rules: {{ rules | length }}
+          {% for rule in rules %}
+            Rule {{ loop.index }}: {{ rule.id }}
+              Conditions: {{ rule.conditions | default({}) | to_nice_json }}
+              Actions: {{ rule.actions | default({}) | to_nice_json }}
+          {% endfor %}
+
+          Migration Target: Event Orchestration
+          Status: READY TO MIGRATE
+          {% endfor %}
+
+          ========================================
+          Run with migration_action=migrate to proceed.
+          ========================================
+
+    - name: Display audit report
+      ansible.builtin.debug:
+        msg: "{{ _audit_report.split('\n') }}"
+
+# === MIGRATE ===
+
+- name: Migrate rulesets to event orchestration
+  when: migration_action == 'migrate'
+  block:
+    - name: List rulesets to migrate
+      pagerduty.pagerduty.ruleset_info:
+        token: "{{ pagerduty_api_token }}"
+      register: _migration_rulesets
+
+    - name: Filter to specific ruleset if specified
+      ansible.builtin.set_fact:
+        _rulesets_to_migrate: >-
+          {{ _migration_rulesets.rulesets | default([])
+             | selectattr('id', 'equalto', legacy_ruleset_id) | list
+             if legacy_ruleset_id | length > 0
+             else _migration_rulesets.rulesets | default([]) }}
+
+    - name: Display migration plan
+      ansible.builtin.debug:
+        msg:
+          - "Migration plan:"
+          - "  Rulesets to migrate: {{ _rulesets_to_migrate | length }}"
+          - "  Disable legacy after migration: {{ disable_legacy_after_migration }}"
+
+    - name: Migrate each ruleset
+      ansible.builtin.include_tasks: migrate_ruleset.yml
+      loop: "{{ _rulesets_to_migrate }}"
+      loop_control:
+        loop_var: _ruleset
+        label: "{{ _ruleset.name | default(_ruleset.id) }}"
+
+    - name: Display migration summary
+      ansible.builtin.debug:
+        msg:
+          - "========================================="
+          - "MIGRATION COMPLETE"
+          - "========================================="
+          - "Rulesets migrated: {{ _rulesets_to_migrate | length }}"
+          - "Legacy rulesets disabled: {{ disable_legacy_after_migration }}"
+          - "========================================="
+  rescue:
+    - name: Migration failed
+      ansible.builtin.fail:
+        msg: "Migration failed: {{ ansible_failed_result.msg | default('unknown error') }}. Review and retry."

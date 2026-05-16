@@ -1,0 +1,22 @@
+---
+# PagerDuty API authentication token
+pagerduty_api_token: ""
+
+# Action to perform: create or end
+maintenance_action: "create"
+
+# Maintenance window description
+maintenance_description: "Scheduled maintenance window"
+
+# Services to place in maintenance
+# Example:
+#   maintenance_services:
+#     - My Web Service
+#     - My API Service
+maintenance_services: []
+
+# Duration of the maintenance window in minutes (used with create action)
+maintenance_duration_minutes: 60
+
+# Start time for the maintenance window (ISO 8601 or "now")
+maintenance_start_time: "now"

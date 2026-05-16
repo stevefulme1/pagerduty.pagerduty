@@ -1,0 +1,30 @@
+---
+# PagerDuty API authentication token
+pagerduty_api_token: ""
+
+# Service configuration
+service_name: ""
+service_description: ""
+escalation_policy_name: ""
+
+# Schedule configuration (optional - only created if schedule_users is provided)
+schedule_name: ""
+schedule_time_zone: "UTC"
+schedule_users: []
+rotation_turn_length_seconds: 604800  # 1 week
+
+# Integration configuration
+integration_type: "events_api_v2_inbound_integration"
+
+# Service behavior
+alert_creation: "create_alerts_and_incidents"
+auto_resolve_timeout: 14400    # 4 hours in seconds
+acknowledgement_timeout: 1800  # 30 minutes in seconds
+
+# Tags to apply to the service
+# Example:
+#   tags:
+#     - production
+#     - tier-1
+#     - platform
+tags: []

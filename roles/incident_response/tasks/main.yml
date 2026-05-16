@@ -1,0 +1,150 @@
+---
+# Role: incident_response
+# Automated incident response workflow
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - pagerduty_api_token | length > 0
+      - incident_id | length > 0
+      - actions | length > 0
+    fail_msg: "pagerduty_api_token, incident_id, and actions must be set"
+
+- name: Validate actions list
+  ansible.builtin.assert:
+    that:
+      - item in ['acknowledge', 'add_note', 'run_diagnostics', 'resolve']
+    fail_msg: "Invalid action '{{ item }}'. Must be one of: acknowledge, add_note, run_diagnostics, resolve"
+  loop: "{{ actions }}"
+  loop_control:
+    label: "{{ item }}"
+
+# --- Acknowledge ---
+
+- name: Acknowledge incident
+  when: "'acknowledge' in actions"
+  block:
+    - name: Set incident status to acknowledged
+      pagerduty.pagerduty.incident:
+        token: "{{ pagerduty_api_token }}"
+        id: "{{ incident_id }}"
+        status: acknowledged
+        state: updated
+      register: _response_acknowledge
+
+    - name: Confirm acknowledgement
+      ansible.builtin.debug:
+        msg: "Incident {{ incident_id }} acknowledged"
+  rescue:
+    - name: Acknowledgement failed
+      ansible.builtin.debug:
+        msg: "WARNING: Failed to acknowledge incident {{ incident_id }}: {{ ansible_failed_result.msg | default('unknown error') }}"
+
+# --- Add Note ---
+
+- name: Add note to incident
+  when: "'add_note' in actions and note_content | length > 0"
+  block:
+    - name: Post note to incident
+      pagerduty.pagerduty.incident_note:
+        token: "{{ pagerduty_api_token }}"
+        incident_id: "{{ incident_id }}"
+        content: "{{ note_content }}"
+        state: present
+      register: _response_note
+
+    - name: Confirm note added
+      ansible.builtin.debug:
+        msg: "Note added to incident {{ incident_id }}"
+  rescue:
+    - name: Note creation failed
+      ansible.builtin.debug:
+        msg: "WARNING: Failed to add note to incident {{ incident_id }}: {{ ansible_failed_result.msg | default('unknown error') }}"
+
+# --- Run Diagnostics ---
+
+- name: Run diagnostics and post results
+  when: "'run_diagnostics' in actions and diagnostic_commands | length > 0"
+  block:
+    - name: Add diagnostic start note
+      pagerduty.pagerduty.incident_note:
+        token: "{{ pagerduty_api_token }}"
+        incident_id: "{{ incident_id }}"
+        content: "[Automated] Running {{ diagnostic_commands | length }} diagnostic commands on {{ inventory_hostname }}"
+        state: present
+
+    - name: Execute diagnostic commands
+      ansible.builtin.shell: "{{ item }}"
+      loop: "{{ diagnostic_commands }}"
+      loop_control:
+        label: "{{ item }}"
+      register: _response_diagnostics
+      changed_when: false
+      failed_when: false
+
+    - name: Build diagnostic report
+      ansible.builtin.set_fact:
+        _diagnostic_report: >-
+          [Automated Diagnostics from {{ inventory_hostname }}]
+          {% for result in _response_diagnostics.results %}
+
+          === Command: {{ result.item }} ===
+          Exit Code: {{ result.rc }}
+          --- stdout ---
+          {{ result.stdout | default('(no output)') }}
+          {% if result.stderr | default('') | length > 0 %}
+          --- stderr ---
+          {{ result.stderr }}
+          {% endif %}
+          {% endfor %}
+
+    - name: Post diagnostic results as incident note
+      pagerduty.pagerduty.incident_note:
+        token: "{{ pagerduty_api_token }}"
+        incident_id: "{{ incident_id }}"
+        content: "{{ _diagnostic_report }}"
+        state: present
+
+    - name: Confirm diagnostics posted
+      ansible.builtin.debug:
+        msg: "Diagnostic results for {{ diagnostic_commands | length }} commands posted to incident {{ incident_id }}"
+  rescue:
+    - name: Diagnostics failed
+      ansible.builtin.debug:
+        msg: "WARNING: Diagnostics failed for incident {{ incident_id }}: {{ ansible_failed_result.msg | default('unknown error') }}"
+
+# --- Resolve ---
+
+- name: Resolve incident
+  when: "'resolve' in actions"
+  block:
+    - name: Add resolution note
+      pagerduty.pagerduty.incident_note:
+        token: "{{ pagerduty_api_token }}"
+        incident_id: "{{ incident_id }}"
+        content: "[Automated Resolution] {{ resolve_message }}"
+        state: present
+
+    - name: Set incident status to resolved
+      pagerduty.pagerduty.incident:
+        token: "{{ pagerduty_api_token }}"
+        id: "{{ incident_id }}"
+        status: resolved
+        state: updated
+      register: _response_resolve
+
+    - name: Confirm resolution
+      ansible.builtin.debug:
+        msg: "Incident {{ incident_id }} resolved: {{ resolve_message }}"
+  rescue:
+    - name: Resolution failed
+      ansible.builtin.debug:
+        msg: "WARNING: Failed to resolve incident {{ incident_id }}: {{ ansible_failed_result.msg | default('unknown error') }}"
+
+# --- Summary ---
+
+- name: Display response summary
+  ansible.builtin.debug:
+    msg:
+      - "Incident response complete for {{ incident_id }}:"
+      - "  Actions performed: {{ actions | join(', ') }}"

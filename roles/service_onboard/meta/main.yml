@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  author: Red Hat Ansible Team
+  description: Onboard a new PagerDuty service end-to-end with schedule, escalation policy, integration, and tags
+  min_ansible_version: "2.15"
+  license: GPL-3.0-or-later
+  platforms:
+    - name: EL
+      versions:
+        - all
+    - name: Fedora
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all
+  galaxy_tags:
+    - pagerduty
+    - service
+    - onboarding
+    - schedule
+    - integration
+    - oncall
+
+dependencies: []

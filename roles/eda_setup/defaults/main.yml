@@ -1,0 +1,34 @@
+---
+# PagerDuty API authentication token
+pagerduty_api_token: ""
+
+# EDA webhook listener configuration
+eda_webhook_host: "0.0.0.0"
+eda_webhook_port: 5000
+
+# Public URL that PagerDuty will POST webhook events to
+# This must be reachable from the internet
+# Example: https://eda.example.com/pagerduty
+eda_webhook_url: ""
+
+# Shared secret for webhook HMAC verification
+eda_webhook_secret: ""
+
+# PagerDuty event types to subscribe to
+eda_event_types:
+  - "incident.triggered"
+  - "incident.acknowledged"
+  - "incident.resolved"
+  - "incident.escalated"
+
+# Path where the generated rulebook will be deployed
+eda_rulebook_path: "/etc/eda/rulebooks/pagerduty.yml"
+
+# Service-specific remediation playbook mappings
+# Example:
+#   remediation_playbooks:
+#     - service_name: Web Frontend
+#       playbook_path: /etc/eda/playbooks/restart_nginx.yml
+#     - service_name: Database Primary
+#       playbook_path: /etc/eda/playbooks/check_postgres.yml
+remediation_playbooks: []

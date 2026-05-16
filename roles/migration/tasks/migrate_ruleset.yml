@@ -1,0 +1,57 @@
+---
+# Sub-task: Migrate a single ruleset to event orchestration
+# Called from main.yml with _ruleset loop_var
+
+- name: "Get rules for ruleset {{ _ruleset.name | default(_ruleset.id) }}"
+  pagerduty.pagerduty.ruleset_rule_info:
+    token: "{{ pagerduty_api_token }}"
+    ruleset_id: "{{ _ruleset.id }}"
+  register: _ruleset_rules
+
+- name: "Display rules found for {{ _ruleset.name | default(_ruleset.id) }}"
+  ansible.builtin.debug:
+    msg: "Ruleset '{{ _ruleset.name | default(_ruleset.id) }}' has {{ _ruleset_rules.rules | default([]) | length }} rule(s) to migrate"
+
+- name: "Create event orchestration for {{ _ruleset.name | default(_ruleset.id) }}"
+  pagerduty.pagerduty.event_orchestration:
+    token: "{{ pagerduty_api_token }}"
+    name: "{{ _ruleset.name | default('Migrated Orchestration') }} (migrated)"
+    description: "Migrated from legacy ruleset {{ _ruleset.id }}"
+    state: present
+  register: _new_orchestration
+
+- name: "Display orchestration created"
+  ansible.builtin.debug:
+    msg: "Created event orchestration: {{ _new_orchestration.event_orchestration.id | default('unknown') }}"
+
+- name: "Create orchestration rules from legacy rules"
+  pagerduty.pagerduty.event_orchestration_rule:
+    token: "{{ pagerduty_api_token }}"
+    orchestration_id: "{{ _new_orchestration.event_orchestration.id }}"
+    conditions: "{{ item.conditions | default({}) }}"
+    actions: "{{ item.actions | default({}) }}"
+    label: "Migrated rule {{ loop.index }} from {{ _ruleset.name | default(_ruleset.id) }}"
+    state: present
+  loop: "{{ _ruleset_rules.rules | default([]) }}"
+  loop_control:
+    label: "Rule {{ ansible_loop.index }} of {{ _ruleset_rules.rules | default([]) | length }}"
+    extended: true
+  register: _orchestration_rules
+  when: _ruleset_rules.rules | default([]) | length > 0
+
+- name: "Disable legacy ruleset {{ _ruleset.name | default(_ruleset.id) }}"
+  pagerduty.pagerduty.ruleset:
+    token: "{{ pagerduty_api_token }}"
+    id: "{{ _ruleset.id }}"
+    state: disabled
+  when: disable_legacy_after_migration | bool
+  register: _ruleset_disabled
+
+- name: "Display migration status for {{ _ruleset.name | default(_ruleset.id) }}"
+  ansible.builtin.debug:
+    msg:
+      - "Ruleset migration complete:"
+      - "  Source: {{ _ruleset.name | default(_ruleset.id) }} ({{ _ruleset.id }})"
+      - "  Target: {{ _new_orchestration.event_orchestration.id | default('unknown') }}"
+      - "  Rules migrated: {{ _ruleset_rules.rules | default([]) | length }}"
+      - "  Legacy disabled: {{ disable_legacy_after_migration }}"

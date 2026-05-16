@@ -1,0 +1,105 @@
+---
+# Role: setup
+# Bootstrap a PagerDuty organization with teams, users, contacts, and escalation policies
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - pagerduty_api_token | length > 0
+    fail_msg: "pagerduty_api_token must be set"
+
+# --- Teams ---
+
+- name: Create teams
+  pagerduty.pagerduty.team:
+    token: "{{ pagerduty_api_token }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description | default(omit) }}"
+    state: present
+  loop: "{{ pagerduty_teams }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _setup_teams
+  when: pagerduty_teams | length > 0
+
+# --- Users ---
+
+- name: Create users
+  pagerduty.pagerduty.user:
+    token: "{{ pagerduty_api_token }}"
+    name: "{{ item.name }}"
+    email: "{{ item.email }}"
+    role: "{{ item.role | default('user') }}"
+    time_zone: "{{ item.time_zone | default('UTC') }}"
+    state: present
+  loop: "{{ pagerduty_users }}"
+  loop_control:
+    label: "{{ item.name }} <{{ item.email }}>"
+  register: _setup_users
+  when: pagerduty_users | length > 0
+
+- name: Add users to teams
+  pagerduty.pagerduty.team_membership:
+    token: "{{ pagerduty_api_token }}"
+    user_name: "{{ item.0.name }}"
+    team_name: "{{ item.1 }}"
+    role: "{{ item.0.team_role | default('responder') }}"
+    state: present
+  loop: "{{ pagerduty_users | subelements('teams', skip_missing=true) }}"
+  loop_control:
+    label: "{{ item.0.name }} -> {{ item.1 }}"
+  when: pagerduty_users | length > 0
+
+# --- Contact Methods ---
+
+- name: Create contact methods for users
+  pagerduty.pagerduty.contact_method:
+    token: "{{ pagerduty_api_token }}"
+    user_name: "{{ item.0.name }}"
+    type: "{{ item.1.type }}"
+    address: "{{ item.1.address }}"
+    label: "{{ item.1.label }}"
+    country_code: "{{ item.1.country_code | default(omit) }}"
+    state: present
+  loop: "{{ pagerduty_users | subelements('contact_methods', skip_missing=true) }}"
+  loop_control:
+    label: "{{ item.0.name }} - {{ item.1.label }} ({{ item.1.type }})"
+
+# --- Notification Rules ---
+
+- name: Create notification rules for users
+  pagerduty.pagerduty.notification_rule:
+    token: "{{ pagerduty_api_token }}"
+    user_name: "{{ item.0.name }}"
+    start_delay_in_minutes: "{{ item.1.start_delay_in_minutes }}"
+    contact_method_type: "{{ item.1.contact_method_type }}"
+    contact_method_label: "{{ item.1.contact_method_label }}"
+    urgency: "{{ item.1.urgency | default('high') }}"
+    state: present
+  loop: "{{ pagerduty_users | subelements('notification_rules', skip_missing=true) }}"
+  loop_control:
+    label: "{{ item.0.name }} - {{ item.1.contact_method_label }} (delay: {{ item.1.start_delay_in_minutes }}m)"
+
+# --- Escalation Policies ---
+
+- name: Create escalation policies
+  pagerduty.pagerduty.escalation_policy:
+    token: "{{ pagerduty_api_token }}"
+    name: "{{ item.name }}"
+    description: "{{ item.description | default(omit) }}"
+    num_loops: "{{ item.num_loops | default(3) }}"
+    rules: "{{ item.rules }}"
+    state: present
+  loop: "{{ pagerduty_escalation_policies }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: _setup_escalation_policies
+  when: pagerduty_escalation_policies | length > 0
+
+- name: Display setup summary
+  ansible.builtin.debug:
+    msg:
+      - "Setup complete:"
+      - "  Teams created: {{ pagerduty_teams | length }}"
+      - "  Users created: {{ pagerduty_users | length }}"
+      - "  Escalation policies created: {{ pagerduty_escalation_policies | length }}"

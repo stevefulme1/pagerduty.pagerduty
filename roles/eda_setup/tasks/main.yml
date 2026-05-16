@@ -1,0 +1,62 @@
+---
+# Role: eda_setup
+# Deploy EDA rulebook and PagerDuty webhook subscription
+
+- name: Validate required variables
+  ansible.builtin.assert:
+    that:
+      - pagerduty_api_token | length > 0
+      - eda_webhook_url | length > 0
+    fail_msg: "pagerduty_api_token and eda_webhook_url must be set"
+
+# --- Webhook Subscription ---
+
+- name: Create PagerDuty webhook subscription
+  block:
+    - name: Create webhook subscription
+      pagerduty.pagerduty.webhook_subscription:
+        token: "{{ pagerduty_api_token }}"
+        description: "EDA webhook for event-driven automation"
+        delivery_method_url: "{{ eda_webhook_url }}"
+        delivery_method_secret: "{{ eda_webhook_secret | default(omit) }}"
+        events: "{{ eda_event_types }}"
+        state: present
+      register: _eda_webhook
+
+    - name: Display webhook subscription info
+      ansible.builtin.debug:
+        msg:
+          - "Webhook subscription created:"
+          - "  URL: {{ eda_webhook_url }}"
+          - "  Events: {{ eda_event_types | join(', ') }}"
+          - "  ID: {{ _eda_webhook.webhook_subscription.id | default('created') }}"
+  rescue:
+    - name: Webhook creation failed
+      ansible.builtin.fail:
+        msg: "Failed to create webhook subscription: {{ ansible_failed_result.msg | default('unknown error') }}"
+
+# --- Rulebook Generation ---
+
+- name: Ensure rulebook directory exists
+  ansible.builtin.file:
+    path: "{{ eda_rulebook_path | dirname }}"
+    state: directory
+    mode: "0755"
+
+- name: Generate EDA rulebook from template
+  ansible.builtin.template:
+    src: pagerduty_rulebook.yml.j2
+    dest: "{{ eda_rulebook_path }}"
+    mode: "0644"
+  register: _eda_rulebook
+
+- name: Display rulebook deployment info
+  ansible.builtin.debug:
+    msg:
+      - "EDA rulebook deployed:"
+      - "  Path: {{ eda_rulebook_path }}"
+      - "  Webhook listener: {{ eda_webhook_host }}:{{ eda_webhook_port }}"
+      - "  Remediation playbooks: {{ remediation_playbooks | length }}"
+      - ""
+      - "Start the rulebook with:"
+      - "  ansible-rulebook --rulebook {{ eda_rulebook_path }} -i inventory"

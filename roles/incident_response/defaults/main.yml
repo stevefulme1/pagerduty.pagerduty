@@ -1,0 +1,32 @@
+---
+# PagerDuty API authentication token
+pagerduty_api_token: ""
+
+# Incident to respond to (required)
+incident_id: ""
+
+# Actions to perform on the incident
+# Choices: acknowledge, add_note, run_diagnostics, resolve
+# Example:
+#   actions:
+#     - acknowledge
+#     - add_note
+#     - run_diagnostics
+#     - resolve
+actions: []
+
+# Content for the incident note (used with add_note action)
+note_content: ""
+
+# Diagnostic commands to run (used with run_diagnostics action)
+# Results are posted as incident notes
+# Example:
+#   diagnostic_commands:
+#     - "systemctl status nginx"
+#     - "df -h"
+#     - "free -m"
+#     - "tail -50 /var/log/syslog"
+diagnostic_commands: []
+
+# Resolution message (used with resolve action)
+resolve_message: "Incident resolved via automated response"
