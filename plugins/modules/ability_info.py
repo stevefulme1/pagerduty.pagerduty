@@ -56,7 +56,12 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty impo
 
 def main():
     module = AnsibleModule(
-        argument_spec=dict(**PAGERDUTY_COMMON_ARGS),
+        argument_spec=dict(
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
+            **PAGERDUTY_COMMON_ARGS
+        ),
         supports_check_mode=True,
     )
 
