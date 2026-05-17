@@ -10,7 +10,8 @@ MODULE_PATH = "ansible_collections.pagerduty.pagerduty.plugins.modules.extension
 
 @pytest.fixture
 def extension_args(module_args):
-    module_args.update({'name': 'Slack Extension', 'endpoint_url': 'https://hooks.slack.com/pd', 'extension_schema_id': 'PESCHEMA1', 'services': ['SVC1'], 'state': 'present'})
+    module_args.update({'name': 'Slack Extension', 'endpoint_url': 'https://hooks.slack.com/pd', 'extension_schema_id': 'PESCHEMA1', 'services': ['SVC1'],
+        'state': 'present'})
     return module_args
 
 

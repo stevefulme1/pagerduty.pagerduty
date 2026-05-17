@@ -10,7 +10,8 @@ MODULE_PATH = "ansible_collections.pagerduty.pagerduty.plugins.modules.webhook_s
 
 @pytest.fixture
 def webhook_subscription_args(module_args):
-    module_args.update({'delivery_method': {'type': 'http_delivery_method', 'url': 'https://hooks.example.com/pd'}, 'events': ['incident.triggered'], 'description': 'Test webhook', 'state': 'present'})
+    module_args.update({'delivery_method': {'type': 'http_delivery_method', 'url': 'https://hooks.example.com/pd'}, 'events': ['incident.triggered'],
+        'description': 'Test webhook', 'state': 'present'})
     return module_args
 
 

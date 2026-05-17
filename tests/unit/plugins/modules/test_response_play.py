@@ -10,7 +10,8 @@ MODULE_PATH = "ansible_collections.pagerduty.pagerduty.plugins.modules.response_
 
 @pytest.fixture
 def response_play_args(module_args):
-    module_args.update({'name': 'P1 Response', 'description': 'Engage on-call', 'responder_type': 'escalation_policy', 'responders': ['EP1'], 'state': 'present'})
+    module_args.update({'name': 'P1 Response', 'description': 'Engage on-call', 'responder_type': 'escalation_policy', 'responders': ['EP1'],
+        'state': 'present'})
     return module_args
 
 
