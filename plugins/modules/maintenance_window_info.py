@@ -22,6 +22,25 @@ options:
     type: str
     choices: [ongoing, future, past, all]
     default: all
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -64,6 +83,10 @@ def main():
         if module.params['state'] != 'all':
             params['filter'] = module.params['state']
 
+        if params.get('limit'):
+            qp['limit'] = params['limit']
+        if params.get('offset'):
+            qp['offset'] = params['offset']
         windows = pd.client.list_all('/maintenance_windows', 'maintenance_windows', params=params)
         pd.result['maintenance_windows'] = windows
     except PagerDutyError as e:

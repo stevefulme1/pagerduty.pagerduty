@@ -26,6 +26,25 @@ options:
     description: If true, return only overview log entries.
     type: bool
     default: false
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -64,6 +83,9 @@ def main():
             since=dict(type='str'),
             until=dict(type='str'),
             is_overview=dict(type='bool', default=False),
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
             **PAGERDUTY_COMMON_ARGS
         ),
         supports_check_mode=True,
@@ -84,6 +106,10 @@ def main():
             qp['until'] = params['until']
         if params['is_overview']:
             qp['is_overview'] = 'true'
+        if params.get('limit'):
+            qp['limit'] = params['limit']
+        if params.get('offset'):
+            qp['offset'] = params['offset']
         entries = client.list_all(path, 'log_entries', params=qp or None)
         module.exit_json(changed=False, log_entries=entries)
     except PagerDutyError as e:

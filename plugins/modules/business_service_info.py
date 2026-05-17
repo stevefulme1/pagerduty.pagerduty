@@ -19,6 +19,25 @@ options:
   name:
     description: Filter business services by exact name match.
     type: str
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -52,6 +71,9 @@ def main():
         argument_spec=dict(
             id=dict(type='str'),
             name=dict(type='str'),
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
             **PAGERDUTY_COMMON_ARGS
         ),
         supports_check_mode=True,
@@ -65,6 +87,10 @@ def main():
             bs = client.get('/business_services/{0}'.format(params['id']))
             module.exit_json(changed=False, business_services=[bs.get('business_service', bs)])
         else:
+            if params.get('limit'):
+                qp['limit'] = params['limit']
+            if params.get('offset'):
+                qp['offset'] = params['offset']
             services = client.list_all('/business_services', 'business_services')
             if params['name']:
                 services = [s for s in services if s.get('name') == params['name']]

@@ -12,6 +12,25 @@ description:
   - Retrieve all priorities configured in the account.
 version_added: "1.0.0"
 author: "PagerDuty (@PagerDuty)"
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -37,7 +56,12 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty impo
 
 def main():
     module = AnsibleModule(
-        argument_spec=dict(**PAGERDUTY_COMMON_ARGS),
+        argument_spec=dict(
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
+            **PAGERDUTY_COMMON_ARGS
+        ),
         supports_check_mode=True,
     )
 
