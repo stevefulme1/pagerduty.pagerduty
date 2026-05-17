@@ -12,7 +12,7 @@ description:
   - Retrieve all priorities configured in the account.
 version_added: "1.0.0"
 author: "PagerDuty (@PagerDuty)"
-
+options:
   limit:
     description:
       - Maximum number of results to return per request.
