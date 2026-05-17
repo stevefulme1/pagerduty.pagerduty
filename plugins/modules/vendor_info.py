@@ -88,11 +88,12 @@ def main():
             vendor = client.get('/vendors/{0}'.format(params['id']))
             module.exit_json(changed=False, vendors=[vendor.get('vendor', vendor)])
         else:
+            qp = {}
             if params.get('limit'):
                 qp['limit'] = params['limit']
             if params.get('offset'):
                 qp['offset'] = params['offset']
-            vendors = client.list_all('/vendors', 'vendors')
+            vendors = client.list_all('/vendors', 'vendors', params=qp or None)
             if params['name']:
                 vendors = [v for v in vendors if v.get('name') == params['name']]
             module.exit_json(changed=False, vendors=vendors)

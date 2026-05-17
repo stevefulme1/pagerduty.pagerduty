@@ -88,11 +88,12 @@ def main():
             orch = client.get('/event_orchestrations/{0}'.format(params['id']))
             module.exit_json(changed=False, event_orchestrations=[orch.get('orchestration', orch)])
         else:
+            qp = {}
             if params.get('limit'):
                 qp['limit'] = params['limit']
             if params.get('offset'):
                 qp['offset'] = params['offset']
-            orchs = client.list_all('/event_orchestrations', 'orchestrations')
+            orchs = client.list_all('/event_orchestrations', 'orchestrations', params=qp or None)
             if params['name']:
                 orchs = [o for o in orchs if o.get('name') == params['name']]
             module.exit_json(changed=False, event_orchestrations=orchs)

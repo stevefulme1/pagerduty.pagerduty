@@ -104,11 +104,12 @@ def main():
             module.exit_json(changed=False, tags=[tag.get('tag', tag)])
         elif params['entity_type'] and params['entity_id']:
             path = '/{0}/{1}/tags'.format(params['entity_type'], params['entity_id'])
+            qp = {}
             if params.get('limit'):
                 qp['limit'] = params['limit']
             if params.get('offset'):
                 qp['offset'] = params['offset']
-            tags = client.list_all(path, 'tags')
+            tags = client.list_all(path, 'tags', params=qp or None)
             module.exit_json(changed=False, tags=tags)
         else:
             qp = {}

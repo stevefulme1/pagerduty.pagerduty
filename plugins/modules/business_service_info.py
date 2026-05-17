@@ -87,11 +87,12 @@ def main():
             bs = client.get('/business_services/{0}'.format(params['id']))
             module.exit_json(changed=False, business_services=[bs.get('business_service', bs)])
         else:
+            qp = {}
             if params.get('limit'):
                 qp['limit'] = params['limit']
             if params.get('offset'):
                 qp['offset'] = params['offset']
-            services = client.list_all('/business_services', 'business_services')
+            services = client.list_all('/business_services', 'business_services', params=qp or None)
             if params['name']:
                 services = [s for s in services if s.get('name') == params['name']]
             module.exit_json(changed=False, business_services=services)

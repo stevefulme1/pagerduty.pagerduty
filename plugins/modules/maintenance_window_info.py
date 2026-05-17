@@ -83,10 +83,10 @@ def main():
         if module.params['state'] != 'all':
             params['filter'] = module.params['state']
 
-        if params.get('limit'):
-            qp['limit'] = params['limit']
-        if params.get('offset'):
-            qp['offset'] = params['offset']
+        if module.params.get('limit'):
+            params['limit'] = module.params['limit']
+        if module.params.get('offset'):
+            params['offset'] = module.params['offset']
         windows = pd.client.list_all('/maintenance_windows', 'maintenance_windows', params=params)
         pd.result['maintenance_windows'] = windows
     except PagerDutyError as e:
