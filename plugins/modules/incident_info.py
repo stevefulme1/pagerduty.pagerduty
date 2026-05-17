@@ -41,6 +41,25 @@ options:
     type: str
     choices: [incident_number:asc, incident_number:desc, created_at:asc, created_at:desc,
               resolved_at:asc, resolved_at:desc, urgency:asc, urgency:desc]
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -92,6 +111,9 @@ def main():
                 'resolved_at:asc', 'resolved_at:desc',
                 'urgency:asc', 'urgency:desc',
             ]),
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
             **PAGERDUTY_COMMON_ARGS
         ),
         supports_check_mode=True,
@@ -118,6 +140,10 @@ def main():
                 qp['until'] = params['until']
             if params['sort_by']:
                 qp['sort_by'] = params['sort_by']
+            if params.get('limit'):
+                qp['limit'] = params['limit']
+            if params.get('offset'):
+                qp['offset'] = params['offset']
             incidents = client.list_all('/incidents', 'incidents', params=qp or None)
             module.exit_json(changed=False, incidents=incidents)
     except PagerDutyError as e:

@@ -30,6 +30,25 @@ options:
     description: List of root resource types to filter by.
     type: list
     elements: str
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -68,6 +87,9 @@ def main():
             method_type=dict(type='str'),
             actions=dict(type='list', elements='str'),
             root_resource_types=dict(type='list', elements='str'),
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
             **PAGERDUTY_COMMON_ARGS
         ),
         supports_check_mode=True,
@@ -88,6 +110,10 @@ def main():
             qp['actions[]'] = ','.join(params['actions'])
         if params['root_resource_types']:
             qp['root_resource_types[]'] = ','.join(params['root_resource_types'])
+        if params.get('limit'):
+            qp['limit'] = params['limit']
+        if params.get('offset'):
+            qp['offset'] = params['offset']
         records = client.list_all('/audit/records', 'records', params=qp or None)
         module.exit_json(changed=False, records=records)
     except PagerDutyError as e:

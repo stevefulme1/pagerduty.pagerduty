@@ -26,6 +26,25 @@ options:
   entity_id:
     description: Entity ID to get tags for. Required with entity_type.
     type: str
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -67,6 +86,9 @@ def main():
             label=dict(type='str'),
             entity_type=dict(type='str', choices=['users', 'teams', 'escalation_policies']),
             entity_id=dict(type='str'),
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
             **PAGERDUTY_COMMON_ARGS
         ),
         required_together=[('entity_type', 'entity_id')],
@@ -82,12 +104,20 @@ def main():
             module.exit_json(changed=False, tags=[tag.get('tag', tag)])
         elif params['entity_type'] and params['entity_id']:
             path = '/{0}/{1}/tags'.format(params['entity_type'], params['entity_id'])
+            if params.get('limit'):
+                qp['limit'] = params['limit']
+            if params.get('offset'):
+                qp['offset'] = params['offset']
             tags = client.list_all(path, 'tags')
             module.exit_json(changed=False, tags=tags)
         else:
             qp = {}
             if params['label']:
                 qp['query'] = params['label']
+            if params.get('limit'):
+                qp['limit'] = params['limit']
+            if params.get('offset'):
+                qp['offset'] = params['offset']
             tags = client.list_all('/tags', 'tags', params=qp or None)
             if params['label']:
                 tags = [t for t in tags if t.get('label') == params['label']]

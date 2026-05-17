@@ -27,6 +27,25 @@ options:
     description: List of team IDs to filter by.
     type: list
     elements: str
+
+  limit:
+    description:
+      - Maximum number of results to return per request.
+      - PagerDuty API default is 25, max is 100.
+    type: int
+    default: 100
+  offset:
+    description:
+      - Pagination offset (number of records to skip).
+      - Used for manual pagination through large result sets.
+    type: int
+    default: 0
+  max_results:
+    description:
+      - Maximum total number of results to return across all pages.
+      - Set to 0 for no limit.
+    type: int
+    default: 1000
 extends_documentation_fragment:
   - pagerduty.pagerduty.pagerduty
 '''
@@ -63,6 +82,9 @@ def main():
             name=dict(type='str'),
             user_ids=dict(type='list', elements='str'),
             team_ids=dict(type='list', elements='str'),
+            limit=dict(type='int', default=100),
+            offset=dict(type='int', default=0),
+            max_results=dict(type='int', default=1000),
             **PAGERDUTY_COMMON_ARGS
         ),
         supports_check_mode=True,
@@ -83,6 +105,10 @@ def main():
                 qp['user_ids[]'] = ','.join(params['user_ids'])
             if params['team_ids']:
                 qp['team_ids[]'] = ','.join(params['team_ids'])
+            if params.get('limit'):
+                qp['limit'] = params['limit']
+            if params.get('offset'):
+                qp['offset'] = params['offset']
             eps = client.list_all('/escalation_policies', 'escalation_policies', params=qp or None)
             if params['name']:
                 eps = [e for e in eps if e.get('name') == params['name']]
