@@ -26,6 +26,7 @@ Example rulebook usage:
 """
 
 import logging
+import re
 from typing import Any
 
 import requests
@@ -125,6 +126,10 @@ def main(event: dict[str, Any], **kwargs) -> dict[str, Any]:
 
     if not incident_id:
         logger.debug("No incident_id in event — skipping enrichment")
+        return event
+
+    if not re.match(r'^[A-Z0-9]+$', incident_id):
+        logger.warning("Invalid incident_id format: %s — skipping enrichment", incident_id)
         return event
 
     invalid = set(include) - _VALID_INCLUDES
