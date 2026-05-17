@@ -67,6 +67,9 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty impo
 
 def main():
     argument_spec = dict(
+        limit=dict(type='int'),
+        offset=dict(type='int'),
+        max_results=dict(type='int'),
         service_ids=dict(type='list', elements='str'),
         state=dict(type='str', default='all', choices=['ongoing', 'future', 'past', 'all']),
         **PAGERDUTY_COMMON_ARGS,
