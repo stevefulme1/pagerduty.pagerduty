@@ -1,0 +1,12 @@
+---
+- name: Alert Remediation
+  hosts: all
+  sources:
+    - stevefulme1.pagerduty.webhook:
+        port: 5000
+  rules:
+    - name: Alert
+      condition: event.pagerduty is defined
+      action:
+        print_event:
+          pretty: true
