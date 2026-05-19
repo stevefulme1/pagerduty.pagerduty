@@ -94,7 +94,8 @@ def main():
 
     try:
         qp = {}
-        data = client.list_all('/event_orchestrations/' + params['orchestration_id'] + '/services/' + params['service_id'] + '/rules', 'rules', params=qp or None)
+        data = client.list_all('/event_orchestrations/' + params['orchestration_id'] + '/services/' +
+            params['service_id'] + '/rules', 'rules', params=qp or None)
         module.exit_json(changed=False, rules=data, count=len(data))
     except PagerDutyError as e:
         module.fail_json(msg=str(e))
