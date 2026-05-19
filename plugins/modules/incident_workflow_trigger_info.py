@@ -90,7 +90,8 @@ def main():
 
     try:
         qp = {}
-        data = client.list_all('/incident_workflows/' + params['workflow_id'] + '/triggers', 'triggers', params=qp or None)
+        data = client.list_all('/incident_workflows/' + params['workflow_id'] + '/triggers', 'triggers',
+            params=qp or None)
         module.exit_json(changed=False, triggers=data, count=len(data))
     except PagerDutyError as e:
         module.fail_json(msg=str(e))

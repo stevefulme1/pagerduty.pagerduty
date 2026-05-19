@@ -90,7 +90,8 @@ def main():
 
     try:
         qp = {}
-        data = client.list_all('/event_orchestrations/' + params['orchestration_id'] + '/integrations', 'integrations', params=qp or None)
+        data = client.list_all('/event_orchestrations/' + params['orchestration_id'] + '/integrations',
+            'integrations', params=qp or None)
         module.exit_json(changed=False, integrations=data, count=len(data))
     except PagerDutyError as e:
         module.fail_json(msg=str(e))

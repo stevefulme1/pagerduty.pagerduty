@@ -95,7 +95,8 @@ def main():
             module.exit_json(changed=False, count=1, contact_methods=[result.get('contact_method', result)])
         else:
             qp = {}
-            data = client.list_all('/users/' + params['user_id'] + '/contact_methods', 'contact_methods', params=qp or None)
+            data = client.list_all('/users/' + params['user_id'] + '/contact_methods', 'contact_methods',
+                params=qp or None)
             module.exit_json(changed=False, contact_methods=data, count=len(data))
     except PagerDutyError as e:
         module.fail_json(msg=str(e))

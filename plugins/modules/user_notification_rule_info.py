@@ -95,7 +95,8 @@ def main():
             module.exit_json(changed=False, count=1, notification_rules=[result.get('notification_rule', result)])
         else:
             qp = {}
-            data = client.list_all('/users/' + params['user_id'] + '/notification_rules', 'notification_rules', params=qp or None)
+            data = client.list_all('/users/' + params['user_id'] + '/notification_rules', 'notification_rules',
+                params=qp or None)
             module.exit_json(changed=False, notification_rules=data, count=len(data))
     except PagerDutyError as e:
         module.fail_json(msg=str(e))

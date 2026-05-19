@@ -95,7 +95,8 @@ def main():
             module.exit_json(changed=False, count=1, integrations=[result.get('integration', result)])
         else:
             qp = {}
-            data = client.list_all('/services/' + params['service_id'] + '/integrations', 'integrations', params=qp or None)
+            data = client.list_all('/services/' + params['service_id'] + '/integrations', 'integrations',
+                params=qp or None)
             module.exit_json(changed=False, integrations=data, count=len(data))
     except PagerDutyError as e:
         module.fail_json(msg=str(e))
