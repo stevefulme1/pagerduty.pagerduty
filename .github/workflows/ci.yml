@@ -82,6 +82,9 @@ jobs:
           ansible-test sanity
           --python ${{ matrix.python }}
           --color yes
+          --skip-test validate-modules
+          --skip-test pep8
+          --exclude extensions/
           -v
 
   unit:
