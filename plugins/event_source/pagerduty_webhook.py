@@ -6,7 +6,7 @@ validates the HMAC-SHA256 signature, normalizes the nested payload into flat
 event fields, and pushes events onto the EDA queue.
 
 Arguments:
-    host:        Bind address (default: 0.0.0.0)
+    host:        Bind address (default: 127.0.0.1)
     port:        Listen port (default: 5000)
     token:       Webhook signing secret for HMAC-SHA256 validation (required)
     event_types: Optional list of event types to accept (e.g. ["incident.triggered"])
@@ -16,7 +16,7 @@ Arguments:
 Example rulebook usage:
     sources:
       - pagerduty.pagerduty.pagerduty_webhook:
-          host: 0.0.0.0
+          host: 127.0.0.1
           port: 5000
           token: "{{ PAGERDUTY_WEBHOOK_SECRET }}"
           event_types:
@@ -127,7 +127,7 @@ async def main(queue: asyncio.Queue, args: dict[str, Any]) -> None:
     Starts an aiohttp server that listens for PagerDuty V3 webhook
     deliveries and pushes normalized events onto the EDA queue.
     """
-    host = str(args.get("host", "0.0.0.0"))
+    host = str(args.get("host", "127.0.0.1"))
     port = int(args.get("port", 5000))
     token = str(args.get("token", ""))
     event_types = args.get("event_types")

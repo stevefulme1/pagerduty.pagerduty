@@ -6,3 +6,5 @@ tests/output/
 .tox/
 *.egg-info/
 .test_namespace/
+.DS_Store
+**/.DS_Store

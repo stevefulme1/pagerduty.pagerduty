@@ -1,0 +1,9 @@
+---
+argument_specs:
+  main:
+    short_description: "Onboard a PagerDuty service with schedule and integrations"
+    options:
+      service_onboard_api_token:
+        description: PagerDuty API authentication token.
+        type: str
+        no_log: true

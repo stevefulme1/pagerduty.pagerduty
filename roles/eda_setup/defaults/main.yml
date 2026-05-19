@@ -3,7 +3,7 @@
 eda_setup_api_token: ""
 
 # EDA webhook listener configuration
-eda_setup_webhook_host: "0.0.0.0"
+eda_setup_webhook_host: "127.0.0.1"
 eda_setup_webhook_port: 5000
 
 # Public URL that PagerDuty will POST webhook events to
