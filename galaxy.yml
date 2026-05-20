@@ -1,11 +1,11 @@
 ---
 namespace: stevefulme1
 name: pagerduty
-version: 2.2.0
+version: 0.1.0
 readme: README.md
 authors:
   - Red Hat Ansible Team
-description: Ansible collection for managing PagerDuty resources, incidents, and event-driven automation
+description: Ansible collection for managing PagerDuty resources, incidents, and event-driven automation Status: Pre-release. Under active development.
 license:
   - GPL-3.0-or-later
 tags:
