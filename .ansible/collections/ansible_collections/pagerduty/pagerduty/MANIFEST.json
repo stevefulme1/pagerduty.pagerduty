@@ -1,0 +1,33 @@
+{
+ "collection_info": {
+  "namespace": "pagerduty",
+  "name": "pagerduty",
+  "version": "0.1.0",
+  "authors": [
+   "Steve Fulmer (@stevefulme1)"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "pagerduty",
+   "api"
+  ],
+  "description": "Ansible collection for the PagerDuty API",
+  "license": [
+   "GPL-3.0-or-later"
+  ],
+  "license_file": null,
+  "dependencies": {},
+  "repository": "https://github.com/stevefulme1/ansible-pagerduty",
+  "documentation": null,
+  "homepage": null,
+  "issues": null
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "cf850890cd58e75d818504b0fe0f7d696186094be902be96f351036225e292e1",
+  "format": 1
+ },
+ "format": 1
+}

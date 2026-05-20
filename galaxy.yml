@@ -1,11 +1,11 @@
 ---
-namespace: stevefulme1
+namespace: pagerduty
 name: pagerduty
 version: 0.1.0
 readme: README.md
 authors:
-  - Auto-generated
-description: Ansible collection for the PagerDuty API API
+  - Steve Fulmer (@stevefulme1)
+description: Ansible collection for the PagerDuty API
 license:
   - GPL-3.0-or-later
 tags:
