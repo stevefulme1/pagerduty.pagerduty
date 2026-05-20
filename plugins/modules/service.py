@@ -1,158 +1,244 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: service
-short_description: Manage PagerDuty services
-description:
-  - Create, update, or delete PagerDuty services.
+short_description: Manage services
 version_added: "1.0.0"
-author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
+description:
+  - Create, update, and delete service resources.
+  - Supports check mode and diff mode for safe operations.
+author:
+  - "Auto-generated"
 options:
-  name:
-    description: The name of the service.
-    type: str
-    required: true
-  description:
-    description: A description for the service.
-    type: str
-  escalation_policy:
-    description: The escalation policy name or ID.
-    type: str
-    required: true
-  alert_creation:
-    description: How alerts are created on the service.
-    type: str
-    choices: [create_alerts_and_incidents, create_incidents]
-    default: create_alerts_and_incidents
-  alert_grouping_parameters:
-    description: Alert grouping parameters as a dict with type and config keys.
-    type: dict
-  auto_resolve_timeout:
-    description: Seconds before an incident auto-resolves. Null to disable.
-    type: int
-  acknowledgement_timeout:
-    description: Seconds before an acknowledged incident re-triggers. Null to disable.
-    type: int
-  status:
-    description: The current status of the service.
-    type: str
-    choices: [active, warning, critical, maintenance, disabled]
   state:
-    description: Whether the service should exist.
+    description:
+      - Desired state of the service resource.
     type: str
-    choices: [present, absent]
+    choices: ['present', 'absent']
     default: present
-extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
 
-EXAMPLES = r'''
+  service:
+    description:
+      - >-
+        
+    type: dict
+
+    required: true
+
+
+
+
+
+extends_documentation_fragment:
+  - stevefulme1.pagerduty.auth
+"""
+
+EXAMPLES = r"""
+
 - name: Create a service
-  pagerduty.pagerduty.service:
-    name: My Web App
-    description: Production web application
-    escalation_policy: Default
-    alert_creation: create_alerts_and_incidents
-    api_token: "{{ pagerduty_token }}"
+  stevefulme1.pagerduty.service:
+
+
+    service: "example_service"
+
+
+    state: present
+  # API: POST /services
+
+
+
+- name: Update a service
+  stevefulme1.pagerduty.service:
+    id: "existing_id"
+
+
+
+    state: present
+  # API:  
+
+
 
 - name: Delete a service
-  pagerduty.pagerduty.service:
-    name: My Web App
-    escalation_policy: Default
+  stevefulme1.pagerduty.service:
+    id: "existing_id"
     state: absent
-    api_token: "{{ pagerduty_token }}"
-'''
+  # API: DELETE /services/{id}
 
-RETURN = r'''
+"""
+
+RETURN = r"""
+
 service:
-  description: The service object.
-  type: dict
+  description: >-
+    
   returned: success
-'''
+  type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
-def resolve_escalation_policy(pd, ep_param):
-    if ep_param.startswith('P') and len(ep_param) >= 7:
-        return {'id': ep_param, 'type': 'escalation_policy_reference'}
-    ep = pd.client.find_by_name('/escalation_policies', 'escalation_policies', ep_param)
-    if not ep:
-        pd.fail('Escalation policy not found: {0}'.format(ep_param))
-    return {'id': ep['id'], 'type': 'escalation_policy_reference'}
+def get_current_state(client, module):
+    """Retrieve the current state of the service via GET."""
+
+    # No single-resource GET endpoint; fall back to list + filter
+    identifier = module.params.get("id")
+
+    search_key = "id"
+    search_value = identifier
+
+    if search_value is None:
+        return None
+    try:
+        items = client.get("/services")
+        if isinstance(items, dict):
+            items = items.get("results", items.get("data", items.get("items", [])))
+        for item in items:
+            if str(item.get(search_key)) == str(search_value):
+                return item
+            if str(item.get("id")) == str(search_value):
+                return item
+        return None
+    except ClientError:
+        return None
 
 
-def build_service_data(pd):
-    params = pd.module.params
-    data = {
-        'name': params['name'],
-        'escalation_policy': resolve_escalation_policy(pd, params['escalation_policy']),
-        'alert_creation': params['alert_creation'],
-    }
-    if params.get('description') is not None:
-        data['description'] = params['description']
-    if params.get('alert_grouping_parameters') is not None:
-        data['alert_grouping_parameters'] = params['alert_grouping_parameters']
-    if params.get('auto_resolve_timeout') is not None:
-        data['auto_resolve_timeout'] = params['auto_resolve_timeout']
-    if params.get('acknowledgement_timeout') is not None:
-        data['acknowledgement_timeout'] = params['acknowledgement_timeout']
-    if params.get('status') is not None:
-        data['status'] = params['status']
-    return data
+
+def needs_update(current, desired):
+    """Compare current state against desired params and return True if an update is needed."""
+    if current is None:
+        return True
+    for key, value in desired.items():
+        if value is None:
+            continue
+        current_value = current.get(key)
+        if current_value != value:
+            return True
+    return False
+
+
+def build_payload(module):
+    """Build the API request payload from module params."""
+    payload = {}
+
+    if module.params.get("service") is not None:
+        payload["service"] = module.params["service"]
+
+    return payload
 
 
 def main():
-    argument_spec = dict(
-        name=dict(type='str', required=True),
-        description=dict(type='str'),
-        escalation_policy=dict(type='str', required=True),
-        alert_creation=dict(type='str', choices=['create_alerts_and_incidents', 'create_incidents'],
-                            default='create_alerts_and_incidents'),
-        alert_grouping_parameters=dict(type='dict'),
-        auto_resolve_timeout=dict(type='int'),
-        acknowledgement_timeout=dict(type='int'),
-        status=dict(type='str', choices=['active', 'warning', 'critical', 'maintenance', 'disabled']),
-        state=dict(type='str', choices=['present', 'absent'], default='present'),
-    )
-    argument_spec.update(PAGERDUTY_COMMON_ARGS)
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            state=dict(type="str", choices=["present", "absent"], default="present"),
 
-    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
-    pd = PagerDutyModule(module)
+            service=dict(
+                type="dict",
+
+                required=True,
+
+
+
+
+
+            ),
+
+        )
+    )
+
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+
+    )
+
+    state = module.params["state"]
+    result = dict(changed=False, diff=dict(before={}, after={}))
 
     try:
-        if module.params['state'] == 'present':
-            pd.ensure_present(
-                resource_key='service',
-                find_path='/services',
-                find_key='services',
-                create_path='/services',
-                create_data=build_service_data(pd),
-                update_path_tmpl='/services/{id}',
-                update_data_fn=lambda: build_service_data(pd),
-                compare_keys=['name', 'description', 'escalation_policy', 'alert_creation',
-                              'alert_grouping_parameters', 'auto_resolve_timeout',
-                              'acknowledgement_timeout', 'status'],
-            )
-        else:
-            pd.ensure_absent(
-                resource_key='service',
-                find_path='/services',
-                find_key='services',
-                delete_path_tmpl='/services/{id}',
-            )
-        pd.exit()
-    except PagerDutyError as e:
-        pd.fail(str(e))
+        client = Client(module)
+        current = get_current_state(client, module)
+
+        if state == "present":
+            desired = build_payload(module)
+
+            if current is None:
+                # Resource does not exist — create it
+                result["changed"] = True
+                result["diff"]["before"] = {}
+                result["diff"]["after"] = desired
+
+                if not module.check_mode:
+
+                    response = client.POST(
+                        "/services",
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
 
 
-if __name__ == '__main__':
+            elif needs_update(current, desired):
+                # Resource exists but needs updating
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = dict(current, **{k: v for k, v in desired.items() if v is not None})
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "".replace(
+                        "{id}", str(identifier)
+                    )
+                    response = client.put(
+                        path,
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
+            else:
+                # Resource exists and is up-to-date
+
+                result["service"] = current.get("service")
+
+
+        elif state == "absent":
+            if current is not None:
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = {}
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "/services/{id}".replace(
+                        "{id}", str(identifier)
+                    )
+                    client.delete(path)
+
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
+
+
+if __name__ == "__main__":
     main()

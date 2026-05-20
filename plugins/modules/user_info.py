@@ -1,139 +1,184 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: user_info
-short_description: List or get PagerDuty users
-description:
-  - Retrieve a single user by ID, name, or email, or list all users with optional filters.
+short_description: Retrieve information about user resources
 version_added: "1.0.0"
-author: "PagerDuty (@PagerDuty)"
+description:
+  - Retrieve a single user by its identifier, or list all user resources.
+  - This module always reports C(changed=False).
+author:
+  - "Auto-generated"
 options:
   id:
-    description: The ID of a specific user to retrieve.
+    description:
+      - The unique identifier of the user to retrieve.
+      - When omitted, all user resources are listed.
     type: str
-  name:
-    description: Filter users by exact name match.
-    type: str
-  email:
-    description: Filter users by exact email match.
-    type: str
-  team_ids:
-    description: List of team IDs to filter users by.
-    type: list
-    elements: str
-  include:
-    description: Additional data to include in the response.
-    type: list
-    elements: str
-    choices: [contact_methods, notification_rules]
+    required: false
 
-  limit:
+
+
+
+
+
+  page:
     description:
-      - Maximum number of results to return per request.
-      - PagerDuty API default is 25, max is 100.
+      - Page number for paginated results.
+      - Only applies when listing resources.
     type: int
-    default: 100
-  offset:
+    required: false
+  page_size:
     description:
-      - Pagination offset (number of records to skip).
-      - Used for manual pagination through large result sets.
+      - Number of results per page.
+      - Only applies when listing resources.
     type: int
-    default: 0
-  max_results:
-    description:
-      - Maximum total number of results to return across all pages.
-      - Set to 0 for no limit.
-    type: int
-    default: 1000
+    required: false
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Get a specific user
-  pagerduty.pagerduty.user_info:
-    id: PUSER01
+  stevefulme1.pagerduty.user_info:
+    id: "example_id"
   register: result
 
-- name: Find a user by email
-  pagerduty.pagerduty.user_info:
-    email: oncall@example.com
+- name: List all user resources
+  stevefulme1.pagerduty.user_info:
   register: result
 
-- name: List users on a team with contact methods
-  pagerduty.pagerduty.user_info:
-    team_ids: ["PTEAM01"]
-    include: [contact_methods]
-  register: result
-'''
 
-RETURN = r'''
+
+- name: List user resources with pagination
+  stevefulme1.pagerduty.user_info:
+    page: 1
+    page_size: 50
+  register: result
+"""
+
+RETURN = r"""
 users:
-  description: List of users matching the query.
-  type: list
+  description: List of user resources matching the query.
   returned: always
-'''
+  type: list
+  elements: dict
+  contains:
+
+    user:
+      description: >-
+        
+      type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyClient, PagerDutyError,
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
+def fetch_single(client, identifier):
+    """Retrieve a single user by identifier."""
+
+    # No single-resource GET endpoint; filter from list
+    items = client.get("/users")
+    if isinstance(items, dict):
+        items = items.get("results", items.get("data", items.get("items", [])))
+    for item in items:
+        if str(item.get("id")) == str(identifier):
+            return item
+    return None
+
+
+
+def fetch_list(client, module):
+    """List user resources with optional filtering and pagination."""
+
+    params = {}
+
+
+
+
+
+
+
+
+
+    page = module.params.get("page")
+    page_size = module.params.get("page_size")
+
+    if page is not None or page_size is not None:
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        response = client.get("/users", params=params)
+        if isinstance(response, dict):
+            return response.get("results", response.get("data", response.get("items", [])))
+        return response if isinstance(response, list) else []
+    else:
+        return client.get_paginated("/users", params=params)
+
+
+
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            id=dict(type='str'),
-            name=dict(type='str'),
-            email=dict(type='str'),
-            team_ids=dict(type='list', elements='str'),
-            include=dict(type='list', elements='str', choices=['contact_methods', 'notification_rules']),
-            limit=dict(type='int', default=100),
-            offset=dict(type='int', default=0),
-            max_results=dict(type='int', default=1000),
-            **PAGERDUTY_COMMON_ARGS
-        ),
-        supports_check_mode=True,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            id=dict(type="str", required=False),
+
+
+
+
+
+
+            page=dict(type="int", required=False),
+            page_size=dict(type="int", required=False),
+        )
     )
 
-    client = PagerDutyClient(module)
-    params = module.params
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ("id", "page"),
+            ("id", "page_size"),
+        ],
+    )
+
+    result = dict(
+        changed=False,
+        users=[],
+    )
 
     try:
-        if params['id']:
-            qp = {}
-            if params['include']:
-                qp['include[]'] = ','.join(params['include'])
-            user = client.get('/users/{0}'.format(params['id']), params=qp or None)
-            module.exit_json(changed=False, users=[user.get('user', user)])
+        client = Client(module)
+        identifier = module.params.get("id")
+
+        if identifier is not None:
+            item = fetch_single(client, identifier)
+            result["users"] = [item] if item else []
         else:
-            qp = {}
-            if params['name']:
-                qp['query'] = params['name']
-            elif params['email']:
-                qp['query'] = params['email']
-            if params['team_ids']:
-                qp['team_ids[]'] = ','.join(params['team_ids'])
-            if params['include']:
-                qp['include[]'] = ','.join(params['include'])
-            if params.get('limit'):
-                qp['limit'] = params['limit']
-            if params.get('offset'):
-                qp['offset'] = params['offset']
-            users = client.list_all('/users', 'users', params=qp or None)
-            if params['name']:
-                users = [u for u in users if u.get('name') == params['name']]
-            if params['email']:
-                users = [u for u in users if u.get('email') == params['email']]
-            module.exit_json(changed=False, users=users)
-    except PagerDutyError as e:
-        module.fail_json(msg=str(e))
+            result["users"] = fetch_list(client, module)
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

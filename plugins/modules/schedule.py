@@ -1,130 +1,244 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: schedule
-short_description: Manage PagerDuty on-call schedules
-description:
-  - Create, update, or delete PagerDuty on-call schedules.
+short_description: Manage schedules
 version_added: "1.0.0"
-author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
+description:
+  - Create, update, and delete schedule resources.
+  - Supports check mode and diff mode for safe operations.
+author:
+  - "Auto-generated"
 options:
-  name:
-    description: The name of the schedule.
-    type: str
-    required: true
-  description:
-    description: A description for the schedule.
-    type: str
-  time_zone:
-    description: The time zone for the schedule (e.g. America/New_York).
-    type: str
-    required: true
-  schedule_layers:
-    description: >
-      List of schedule layers. Each layer is a dict with rotation_virtual_start,
-      rotation_turn_length_seconds, start, users (list of dicts with user type/id),
-      and optional restrictions.
-    type: list
-    elements: dict
   state:
-    description: Whether the schedule should exist.
+    description:
+      - Desired state of the schedule resource.
     type: str
-    choices: [present, absent]
+    choices: ['present', 'absent']
     default: present
-extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
 
-EXAMPLES = r'''
-- name: Create a weekly on-call schedule
-  pagerduty.pagerduty.schedule:
-    name: Primary On-Call
-    time_zone: America/New_York
-    schedule_layers:
-      - rotation_virtual_start: "2024-01-01T00:00:00-05:00"
-        rotation_turn_length_seconds: 604800
-        start: "2024-01-01T00:00:00-05:00"
-        users:
-          - user:
-              type: user_reference
-              id: PUSER123
-    api_token: "{{ pagerduty_token }}"
+  schedule:
+    description:
+      - >-
+        
+    type: dict
+
+    required: true
+
+
+
+
+
+extends_documentation_fragment:
+  - stevefulme1.pagerduty.auth
+"""
+
+EXAMPLES = r"""
+
+- name: Create a schedule
+  stevefulme1.pagerduty.schedule:
+
+
+    schedule: "example_schedule"
+
+
+    state: present
+  # API: POST /v3/schedules
+
+
+
+- name: Update a schedule
+  stevefulme1.pagerduty.schedule:
+    id: "existing_id"
+
+
+
+    state: present
+  # API:  
+
+
 
 - name: Delete a schedule
-  pagerduty.pagerduty.schedule:
-    name: Primary On-Call
-    time_zone: America/New_York
+  stevefulme1.pagerduty.schedule:
+    id: "existing_id"
     state: absent
-    api_token: "{{ pagerduty_token }}"
-'''
+  # API: DELETE /v3/schedules/{id}
 
-RETURN = r'''
+"""
+
+RETURN = r"""
+
 schedule:
-  description: The schedule object.
-  type: dict
+  description: >-
+    
   returned: success
-'''
+  type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
-def build_schedule_data(module):
-    data = {
-        'name': module.params['name'],
-        'type': 'schedule',
-        'time_zone': module.params['time_zone'],
-    }
-    if module.params.get('description') is not None:
-        data['description'] = module.params['description']
-    if module.params.get('schedule_layers') is not None:
-        data['schedule_layers'] = module.params['schedule_layers']
-    return data
+def get_current_state(client, module):
+    """Retrieve the current state of the schedule via GET."""
+
+    # No single-resource GET endpoint; fall back to list + filter
+    identifier = module.params.get("id")
+
+    search_key = "id"
+    search_value = identifier
+
+    if search_value is None:
+        return None
+    try:
+        items = client.get("/v3/schedules")
+        if isinstance(items, dict):
+            items = items.get("results", items.get("data", items.get("items", [])))
+        for item in items:
+            if str(item.get(search_key)) == str(search_value):
+                return item
+            if str(item.get("id")) == str(search_value):
+                return item
+        return None
+    except ClientError:
+        return None
+
+
+
+def needs_update(current, desired):
+    """Compare current state against desired params and return True if an update is needed."""
+    if current is None:
+        return True
+    for key, value in desired.items():
+        if value is None:
+            continue
+        current_value = current.get(key)
+        if current_value != value:
+            return True
+    return False
+
+
+def build_payload(module):
+    """Build the API request payload from module params."""
+    payload = {}
+
+    if module.params.get("schedule") is not None:
+        payload["schedule"] = module.params["schedule"]
+
+    return payload
 
 
 def main():
-    argument_spec = dict(
-        name=dict(type='str', required=True),
-        description=dict(type='str'),
-        time_zone=dict(type='str', required=True),
-        schedule_layers=dict(type='list', elements='dict'),
-        state=dict(type='str', choices=['present', 'absent'], default='present'),
-    )
-    argument_spec.update(PAGERDUTY_COMMON_ARGS)
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            state=dict(type="str", choices=["present", "absent"], default="present"),
 
-    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
-    pd = PagerDutyModule(module)
+            schedule=dict(
+                type="dict",
+
+                required=True,
+
+
+
+
+
+            ),
+
+        )
+    )
+
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+
+    )
+
+    state = module.params["state"]
+    result = dict(changed=False, diff=dict(before={}, after={}))
 
     try:
-        if module.params['state'] == 'present':
-            pd.ensure_present(
-                resource_key='schedule',
-                find_path='/schedules',
-                find_key='schedules',
-                create_path='/schedules',
-                create_data=build_schedule_data(module),
-                update_path_tmpl='/schedules/{id}',
-                update_data_fn=lambda: build_schedule_data(module),
-                compare_keys=['name', 'description', 'time_zone', 'schedule_layers'],
-            )
-        else:
-            pd.ensure_absent(
-                resource_key='schedule',
-                find_path='/schedules',
-                find_key='schedules',
-                delete_path_tmpl='/schedules/{id}',
-            )
-        pd.exit()
-    except PagerDutyError as e:
-        pd.fail(str(e))
+        client = Client(module)
+        current = get_current_state(client, module)
+
+        if state == "present":
+            desired = build_payload(module)
+
+            if current is None:
+                # Resource does not exist — create it
+                result["changed"] = True
+                result["diff"]["before"] = {}
+                result["diff"]["after"] = desired
+
+                if not module.check_mode:
+
+                    response = client.POST(
+                        "/v3/schedules",
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
 
 
-if __name__ == '__main__':
+            elif needs_update(current, desired):
+                # Resource exists but needs updating
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = dict(current, **{k: v for k, v in desired.items() if v is not None})
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "".replace(
+                        "{id}", str(identifier)
+                    )
+                    response = client.put(
+                        path,
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
+            else:
+                # Resource exists and is up-to-date
+
+                result["schedule"] = current.get("schedule")
+
+
+        elif state == "absent":
+            if current is not None:
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = {}
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "/v3/schedules/{id}".replace(
+                        "{id}", str(identifier)
+                    )
+                    client.delete(path)
+
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
+
+
+if __name__ == "__main__":
     main()

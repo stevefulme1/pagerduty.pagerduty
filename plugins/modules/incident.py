@@ -1,237 +1,266 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: incident
-short_description: Manage PagerDuty incidents
-description:
-  - Create, update, and resolve PagerDuty incidents.
-  - For updates, the C(id) parameter is required.
-  - Idempotent -- a second run with identical parameters returns changed=False.
+short_description: Manage incidents
 version_added: "1.0.0"
-author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
+description:
+  - Create, update, and delete incident resources.
+  - Supports check mode and diff mode for safe operations.
+author:
+  - "Auto-generated"
 options:
-  id:
-    description: Incident ID for updates.
-    type: str
-  title:
-    description: Incident title. Required when creating.
-    type: str
-  service:
-    description: Service name or ID to associate with the incident.
-    type: str
-  urgency:
-    description: Incident urgency.
-    type: str
-    choices: [high, low]
-  body:
-    description: Incident body details.
-    type: str
-  escalation_policy:
-    description: Escalation policy name or ID.
-    type: str
-  priority:
-    description: Priority name or ID.
-    type: str
-  incident_key:
-    description: Deduplication key for the incident.
-    type: str
-  status:
-    description: Incident status.
-    type: str
-    choices: [triggered, acknowledged, resolved]
-  assignments:
-    description: List of user IDs to assign.
-    type: list
-    elements: str
   state:
-    description: Desired state.
+    description:
+      - Desired state of the incident resource.
     type: str
-    choices: [present, absent]
+    choices: ['present', 'absent']
     default: present
+
+  incident:
+    description:
+      - >-
+        The parameters of the incident to update.
+    type: dict
+
+    required: true
+
+
+
+
+
+  incidents:
+    description:
+      - >-
+        An array of incidents, including the parameters to update.
+    type: list
+
+    required: true
+
+
+
+
+
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
-- name: Create an incident
-  pagerduty.pagerduty.incident:
-    api_token: "{{ pd_token }}"
-    title: "Server outage"
-    service: "Web Application"
-    urgency: high
+EXAMPLES = r"""
+
+- name: Create a incident
+  stevefulme1.pagerduty.incident:
+
+
+    incident: "example_incident"
+
+
+
+    incidents: "example_incidents"
+
+
     state: present
+  # API: POST /incidents
 
-- name: Resolve an incident
-  pagerduty.pagerduty.incident:
-    api_token: "{{ pd_token }}"
-    id: "P1234567"
-    status: resolved
+
+
+- name: Update a incident
+  stevefulme1.pagerduty.incident:
+    id: "existing_id"
+
+
+
+
+
     state: present
-'''
+  # API:  
 
-RETURN = r'''
+
+
+"""
+
+RETURN = r"""
+
 incident:
-  description: The incident object.
-  type: dict
+  description: >-
+    
   returned: success
-'''
+  type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
-COMPARE_KEYS = ('title', 'urgency', 'status')
 
+def get_current_state(client, module):
+    """Retrieve the current state of the incident via GET."""
 
-def resolve_ref(client, value, path, resource_key):
-    """Resolve a name or ID to an API reference dict."""
-    if not value:
+    # No single-resource GET endpoint; fall back to list + filter
+    identifier = module.params.get("id")
+
+    search_key = "id"
+    search_value = identifier
+
+    if search_value is None:
         return None
-    if value.startswith('P') and len(value) >= 7:
-        return {'id': value, 'type': resource_key + '_reference'}
-    found = client.find_by_name(path, resource_key + 's', value)
-    if not found:
-        raise PagerDutyError('Could not find {0} named "{1}"'.format(resource_key, value))
-    return {'id': found['id'], 'type': resource_key + '_reference'}
-
-
-def get_current_state(client, incident_id):
-    """GET the incident, return None if not found."""
-    if not incident_id:
+    try:
+        items = client.get("/incidents")
+        if isinstance(items, dict):
+            items = items.get("results", items.get("data", items.get("items", [])))
+        for item in items:
+            if str(item.get(search_key)) == str(search_value):
+                return item
+            if str(item.get("id")) == str(search_value):
+                return item
         return None
-    return client.find_by_id('/incidents/{0}'.format(incident_id), 'incident')
+    except ClientError:
+        return None
+
 
 
 def needs_update(current, desired):
-    """Compare current vs desired, return dict of changes."""
-    changes = {}
-    for key in COMPARE_KEYS:
-        if key in desired:
-            current_val = current.get(key)
-            desired_val = desired[key]
-            if current_val != desired_val:
-                changes[key] = desired_val
-    return changes
+    """Compare current state against desired params and return True if an update is needed."""
+    if current is None:
+        return True
+    for key, value in desired.items():
+        if value is None:
+            continue
+        current_value = current.get(key)
+        if current_value != value:
+            return True
+    return False
 
 
-def build_incident_data(client, params):
-    data = {}
-    if params.get('title'):
-        data['title'] = params['title']
-    if params.get('urgency'):
-        data['urgency'] = params['urgency']
-    if params.get('incident_key'):
-        data['incident_key'] = params['incident_key']
-    if params.get('status'):
-        data['status'] = params['status']
-    if params.get('body'):
-        data['body'] = {'type': 'incident_body', 'details': params['body']}
+def build_payload(module):
+    """Build the API request payload from module params."""
+    payload = {}
 
-    service_ref = resolve_ref(client, params.get('service'), '/services', 'service')
-    if service_ref:
-        data['service'] = service_ref
+    if module.params.get("incident") is not None:
+        payload["incident"] = module.params["incident"]
 
-    ep_ref = resolve_ref(client, params.get('escalation_policy'), '/escalation_policies', 'escalation_policy')
-    if ep_ref:
-        data['escalation_policy'] = ep_ref
+    if module.params.get("incidents") is not None:
+        payload["incidents"] = module.params["incidents"]
 
-    if params.get('priority'):
-        pri = params['priority']
-        priorities = client.list_all('/priorities', 'priorities')
-        match = next((p for p in priorities if p['id'] == pri or p['name'] == pri), None)
-        if not match:
-            raise PagerDutyError('Could not find priority "{0}"'.format(pri))
-        data['priority'] = {'id': match['id'], 'type': 'priority_reference'}
-
-    if params.get('assignments'):
-        data['assignments'] = [
-            {'assignee': {'id': uid, 'type': 'user_reference'}} for uid in params['assignments']
-        ]
-
-    data['type'] = 'incident'
-    return data
+    return payload
 
 
 def main():
-    argument_spec = dict(
-        id=dict(type='str'),
-        title=dict(type='str'),
-        service=dict(type='str'),
-        urgency=dict(type='str', choices=['high', 'low']),
-        body=dict(type='str'),
-        escalation_policy=dict(type='str'),
-        priority=dict(type='str'),
-        incident_key=dict(type='str', no_log=False),
-        status=dict(type='str', choices=['triggered', 'acknowledged', 'resolved']),
-        assignments=dict(type='list', elements='str'),
-        state=dict(type='str', default='present', choices=['present', 'absent']),
-        **PAGERDUTY_COMMON_ARGS,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            state=dict(type="str", choices=["present", "absent"], default="present"),
+
+            incident=dict(
+                type="dict",
+
+                required=True,
+
+
+
+
+
+            ),
+
+            incidents=dict(
+                type="list",
+
+                required=True,
+
+
+
+
+
+            ),
+
+        )
     )
 
     module = AnsibleModule(
-        argument_spec=argument_spec,
+        argument_spec=spec,
         supports_check_mode=True,
-        required_if=[
-            ('state', 'present', ('title', 'id'), True),
-        ],
+
     )
 
-    pd = PagerDutyModule(module)
+    state = module.params["state"]
+    result = dict(changed=False, diff=dict(before={}, after={}))
 
     try:
-        state = module.params['state']
-        incident_id = module.params.get('id')
+        client = Client(module)
+        current = get_current_state(client, module)
 
-        if state == 'absent':
-            if not incident_id:
-                pd.fail('id is required to resolve/remove an incident')
-            existing = get_current_state(pd.client, incident_id)
-            if not existing or existing.get('status') == 'resolved':
-                pd.exit()
-            if pd.check_mode:
-                pd.result['changed'] = True
-                pd.exit()
-            pd.client.put('/incidents/{0}'.format(incident_id),
-                          {'incident': {'type': 'incident', 'status': 'resolved'}})
-            pd.result['changed'] = True
-        else:
-            data = build_incident_data(pd.client, module.params)
-            if incident_id:
-                existing = get_current_state(pd.client, incident_id)
-                if not existing:
-                    pd.fail('Incident {0} not found'.format(incident_id))
-                changes = needs_update(existing, data)
-                if not changes:
-                    pd.result['incident'] = existing
-                    pd.exit()
-                if pd.check_mode:
-                    pd.result['changed'] = True
-                    pd.result['incident'] = existing
-                    pd.exit()
-                result = pd.client.put('/incidents/{0}'.format(incident_id), {'incident': data})
-                pd.result['incident'] = result.get('incident', result)
-                pd.result['changed'] = True
+        if state == "present":
+            desired = build_payload(module)
+
+            if current is None:
+                # Resource does not exist — create it
+                result["changed"] = True
+                result["diff"]["before"] = {}
+                result["diff"]["after"] = desired
+
+                if not module.check_mode:
+
+                    response = client.POST(
+                        "/incidents",
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
+            elif needs_update(current, desired):
+                # Resource exists but needs updating
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = dict(current, **{k: v for k, v in desired.items() if v is not None})
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "".replace(
+                        "{id}", str(identifier)
+                    )
+                    response = client.put(
+                        path,
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
             else:
-                if not module.params.get('service'):
-                    pd.fail('service is required when creating an incident')
-                if pd.check_mode:
-                    pd.result['changed'] = True
-                    pd.exit()
-                result = pd.client.post('/incidents', {'incident': data})
-                pd.result['incident'] = result.get('incident', result)
-                pd.result['changed'] = True
+                # Resource exists and is up-to-date
 
-        pd.exit()
-    except PagerDutyError as e:
-        pd.fail(str(e))
+                result["incident"] = current.get("incident")
 
 
-if __name__ == '__main__':
+        elif state == "absent":
+            if current is not None:
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = {}
+
+                if not module.check_mode:
+
+                    pass
+
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
+
+
+if __name__ == "__main__":
     main()

@@ -1,9 +1,0 @@
----
-argument_specs:
-  main:
-    short_description: "Set up PagerDuty teams, users, and escalation policies"
-    options:
-      setup_api_token:
-        description: PagerDuty API authentication token.
-        type: str
-        no_log: true

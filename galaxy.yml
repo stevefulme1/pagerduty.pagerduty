@@ -4,26 +4,15 @@ name: pagerduty
 version: 0.1.0
 readme: README.md
 authors:
-  - Red Hat Ansible Team
-description: Ansible collection for managing PagerDuty resources, incidents, and event-driven automation Status: Pre-release. Under active development.
+  - Auto-generated
+description: Ansible collection for the PagerDuty API API
 license:
   - GPL-3.0-or-later
 tags:
   - pagerduty
-  - monitoring
-  - incident
-  - oncall
-  - eda
-  - event_driven
-repository: https://github.com/ansible-collections/pagerduty.pagerduty
-documentation: https://github.com/ansible-collections/pagerduty.pagerduty/blob/main/README.md
-homepage: https://github.com/ansible-collections/pagerduty.pagerduty
-issues: https://github.com/ansible-collections/pagerduty.pagerduty/issues
+  - api
+repository: https://github.com/stevefulme1/ansible-pagerduty
 build_ignore:
   - tests/output
-  - '*.tar.gz'
-  - .github
-  - .yamllint
-  - .ansible-lint
-  - Makefile
-  - CONTRIBUTING.md
+  - .tox
+  - .venv

@@ -1,102 +1,178 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: maintenance_window_info
-short_description: List PagerDuty maintenance windows
-author: Ansible PagerDuty Collection Authors (@ansible-collections)
+short_description: Retrieve information about maintenance_window resources
+version_added: "1.0.0"
 description:
-  - Retrieves maintenance windows from PagerDuty.
-  - Can filter by service IDs and state (ongoing, future, past).
+  - Retrieve a single maintenance_window by its identifier, or list all maintenance_window resources.
+  - This module always reports C(changed=False).
+author:
+  - "Auto-generated"
 options:
-  service_ids:
-    description: Filter to maintenance windows for these service IDs.
-    type: list
-    elements: str
-  state:
-    description: Filter by maintenance window state.
+  id:
+    description:
+      - The unique identifier of the maintenance_window to retrieve.
+      - When omitted, all maintenance_window resources are listed.
     type: str
-    choices: [ongoing, future, past, all]
-    default: all
+    required: false
 
-  limit:
+
+
+
+  page:
     description:
-      - Maximum number of results to return per request.
-      - PagerDuty API default is 25, max is 100.
+      - Page number for paginated results.
+      - Only applies when listing resources.
     type: int
-    default: 100
-  offset:
+    required: false
+  page_size:
     description:
-      - Pagination offset (number of records to skip).
-      - Used for manual pagination through large result sets.
+      - Number of results per page.
+      - Only applies when listing resources.
     type: int
-    default: 0
-  max_results:
-    description:
-      - Maximum total number of results to return across all pages.
-      - Set to 0 for no limit.
-    type: int
-    default: 1000
+    required: false
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
-- name: List all ongoing maintenance windows
-  pagerduty.pagerduty.maintenance_window_info:
-    api_token: "{{ pd_token }}"
-    state: ongoing
-'''
+EXAMPLES = r"""
+- name: Get a specific maintenance_window
+  stevefulme1.pagerduty.maintenance_window_info:
+    id: "example_id"
+  register: result
 
-RETURN = r'''
+- name: List all maintenance_window resources
+  stevefulme1.pagerduty.maintenance_window_info:
+  register: result
+
+
+
+- name: List maintenance_window resources with pagination
+  stevefulme1.pagerduty.maintenance_window_info:
+    page: 1
+    page_size: 50
+  register: result
+"""
+
+RETURN = r"""
 maintenance_windows:
-  description: List of maintenance windows.
-  type: list
+  description: List of maintenance_window resources matching the query.
   returned: always
-'''
+  type: list
+  elements: dict
+  contains:
+
+    maintenance_window:
+      description: >-
+        
+      type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
+def fetch_single(client, identifier):
+    """Retrieve a single maintenance_window by identifier."""
+
+    # No single-resource GET endpoint; filter from list
+    items = client.get("/maintenance_windows")
+    if isinstance(items, dict):
+        items = items.get("results", items.get("data", items.get("items", [])))
+    for item in items:
+        if str(item.get("id")) == str(identifier):
+            return item
+    return None
+
+
+
+def fetch_list(client, module):
+    """List maintenance_window resources with optional filtering and pagination."""
+
+    params = {}
+
+
+
+
+
+
+
+    page = module.params.get("page")
+    page_size = module.params.get("page_size")
+
+    if page is not None or page_size is not None:
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        response = client.get("/maintenance_windows", params=params)
+        if isinstance(response, dict):
+            return response.get("results", response.get("data", response.get("items", [])))
+        return response if isinstance(response, list) else []
+    else:
+        return client.get_paginated("/maintenance_windows", params=params)
+
+
+
 def main():
-    argument_spec = dict(
-        limit=dict(type='int', default=100),
-        offset=dict(type='int', default=0),
-        max_results=dict(type='int', default=1000),
-        service_ids=dict(type='list', elements='str'),
-        state=dict(type='str', default='all', choices=['ongoing', 'future', 'past', 'all']),
-        **PAGERDUTY_COMMON_ARGS,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            id=dict(type="str", required=False),
+
+
+
+
+            page=dict(type="int", required=False),
+            page_size=dict(type="int", required=False),
+        )
     )
 
-    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
-    pd = PagerDutyModule(module)
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ("id", "page"),
+            ("id", "page_size"),
+        ],
+    )
+
+    result = dict(
+        changed=False,
+        maintenance_windows=[],
+    )
 
     try:
-        params = {}
-        if module.params['service_ids']:
-            for sid in module.params['service_ids']:
-                params['service_ids[]'] = sid
-        if module.params['state'] != 'all':
-            params['filter'] = module.params['state']
+        client = Client(module)
+        identifier = module.params.get("id")
 
-        if module.params.get('limit'):
-            params['limit'] = module.params['limit']
-        if module.params.get('offset'):
-            params['offset'] = module.params['offset']
-        windows = pd.client.list_all('/maintenance_windows', 'maintenance_windows', params=params)
-        pd.result['maintenance_windows'] = windows
-    except PagerDutyError as e:
-        pd.fail('Failed to list maintenance windows: {0}'.format(str(e)))
+        if identifier is not None:
+            item = fetch_single(client, identifier)
+            result["maintenance_windows"] = [item] if item else []
+        else:
+            result["maintenance_windows"] = fetch_list(client, module)
 
-    pd.exit()
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

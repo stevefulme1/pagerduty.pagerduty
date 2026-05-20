@@ -1,105 +1,178 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: webhook_subscription_info
-short_description: List or get PagerDuty webhook subscriptions
-description:
-  - Retrieve information about PagerDuty webhook subscriptions.
-  - This is a read-only module that does not modify any resources.
-  - Returns a list of matching resources with full metadata.
-  - Supports check mode (read-only, no changes are made).
-  - Uses the PagerDuty REST API v2.
+short_description: Retrieve information about webhook_subscription resources
 version_added: "1.0.0"
-author: "PagerDuty (@PagerDuty)"
+description:
+  - Retrieve a single webhook_subscription by its identifier, or list all webhook_subscription resources.
+  - This module always reports C(changed=False).
+author:
+  - "Auto-generated"
 options:
   id:
-    description: The ID of a specific webhook subscription to retrieve.
+    description:
+      - The unique identifier of the webhook_subscription to retrieve.
+      - When omitted, all webhook_subscription resources are listed.
     type: str
-notes:
-  - This module requires a valid PagerDuty API token.
-  - All timestamps are returned in ISO 8601 format.
-  - Pagination is handled automatically for list operations.
+    required: false
+
+
+
+
+  page:
+    description:
+      - Page number for paginated results.
+      - Only applies when listing resources.
+    type: int
+    required: false
+  page_size:
+    description:
+      - Number of results per page.
+      - Only applies when listing resources.
+    type: int
+    required: false
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
-- name: List all webhook subscriptions
-  pagerduty.pagerduty.webhook_subscription_info:
+EXAMPLES = r"""
+- name: Get a specific webhook_subscription
+  stevefulme1.pagerduty.webhook_subscription_info:
+    id: "example_id"
   register: result
 
-- name: Get a specific webhook subscription
-  pagerduty.pagerduty.webhook_subscription_info:
-    id: PABC123
+- name: List all webhook_subscription resources
+  stevefulme1.pagerduty.webhook_subscription_info:
   register: result
-'''
 
-RETURN = r'''
+
+
+- name: List webhook_subscription resources with pagination
+  stevefulme1.pagerduty.webhook_subscription_info:
+    page: 1
+    page_size: 50
+  register: result
+"""
+
+RETURN = r"""
 webhook_subscriptions:
-  description: List of webhook subscriptions matching the query.
+  description: List of webhook_subscription resources matching the query.
+  returned: always
   type: list
   elements: dict
   contains:
-    id:
-      description: The unique identifier of the resource.
-      type: str
-      returned: always
-    type:
-      description: The PagerDuty resource type.
-      type: str
-      returned: always
-    summary:
-      description: A short summary of the resource.
-      type: str
-      returned: when available
-    self:
-      description: The API URL for this resource.
-      type: str
-      returned: always
-    html_url:
-      description: The URL to view this resource in the PagerDuty web UI.
-      type: str
-      returned: when available
-count:
-  description: Number of results returned.
-  type: int
-  returned: always
-'''
+
+    webhook_subscription:
+      description: >-
+        
+      type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyClient, PagerDutyError,
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
+def fetch_single(client, identifier):
+    """Retrieve a single webhook_subscription by identifier."""
+
+    # No single-resource GET endpoint; filter from list
+    items = client.get("/webhook_subscriptions")
+    if isinstance(items, dict):
+        items = items.get("results", items.get("data", items.get("items", [])))
+    for item in items:
+        if str(item.get("id")) == str(identifier):
+            return item
+    return None
+
+
+
+def fetch_list(client, module):
+    """List webhook_subscription resources with optional filtering and pagination."""
+
+    params = {}
+
+
+
+
+
+
+
+    page = module.params.get("page")
+    page_size = module.params.get("page_size")
+
+    if page is not None or page_size is not None:
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        response = client.get("/webhook_subscriptions", params=params)
+        if isinstance(response, dict):
+            return response.get("results", response.get("data", response.get("items", [])))
+        return response if isinstance(response, list) else []
+    else:
+        return client.get_paginated("/webhook_subscriptions", params=params)
+
+
+
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            id=dict(type='str'),
-            **PAGERDUTY_COMMON_ARGS
-        ),
-        supports_check_mode=True,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            id=dict(type="str", required=False),
+
+
+
+
+            page=dict(type="int", required=False),
+            page_size=dict(type="int", required=False),
+        )
     )
 
-    client = PagerDutyClient(module)
-    params = module.params
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ("id", "page"),
+            ("id", "page_size"),
+        ],
+    )
+
+    result = dict(
+        changed=False,
+        webhook_subscriptions=[],
+    )
 
     try:
-        if params['id']:
-            result = client.get('/webhook_subscriptions/' + params['id'])
-            module.exit_json(changed=False, count=1, webhook_subscriptions=[result.get('webhook_subscription', result)])
+        client = Client(module)
+        identifier = module.params.get("id")
+
+        if identifier is not None:
+            item = fetch_single(client, identifier)
+            result["webhook_subscriptions"] = [item] if item else []
         else:
-            qp = {}
-            data = client.list_all('/webhook_subscriptions', 'webhook_subscriptions', params=qp or None)
-            module.exit_json(changed=False, webhook_subscriptions=data, count=len(data))
-    except PagerDutyError as e:
-        module.fail_json(msg=str(e))
+            result["webhook_subscriptions"] = fetch_list(client, module)
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

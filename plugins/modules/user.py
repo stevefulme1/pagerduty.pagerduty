@@ -1,153 +1,276 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: user
-short_description: Manage PagerDuty users
-description:
-  - Create, update, or delete PagerDuty users.
+short_description: Manage teams
 version_added: "1.0.0"
-author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
+description:
+  - Create, update, and delete user resources.
+  - Supports check mode and diff mode for safe operations.
+author:
+  - "Auto-generated"
 options:
-  name:
-    description: The name of the user.
-    type: str
-    required: true
-  email:
-    description: The user's email address. Used as the unique identifier.
-    type: str
-    required: true
-  role:
-    description: The user's role.
-    type: str
-    choices: [admin, limited_user, observer, owner, read_only_limited_user, read_only_user, restricted_access, user]
-  time_zone:
-    description: The user's time zone.
-    type: str
-  color:
-    description: The user's schedule color.
-    type: str
-  description:
-    description: A description of the user.
-    type: str
-  job_title:
-    description: The user's job title.
-    type: str
   state:
-    description: Whether the user should exist.
+    description:
+      - Desired state of the user resource.
     type: str
-    choices: [present, absent]
+    choices: ['present', 'absent']
     default: present
-extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
 
-EXAMPLES = r'''
+  user:
+    description:
+      - >-
+        
+    type: dict
+
+    required: true
+
+
+
+
+
+  role:
+    description:
+      - >-
+        The role of the user on the team.
+    type: str
+
+
+    choices: ["observer", "responder", "manager"]
+
+
+
+
+extends_documentation_fragment:
+  - stevefulme1.pagerduty.auth
+"""
+
+EXAMPLES = r"""
+
 - name: Create a user
-  pagerduty.pagerduty.user:
-    name: Jane Doe
-    email: jane.doe@example.com
-    role: user
-    time_zone: America/New_York
-    api_token: "{{ pagerduty_token }}"
+  stevefulme1.pagerduty.user:
+
+
+    user: "example_user"
+
+
+
+
+    state: present
+  # API: POST /users
+
+
+
+- name: Update a user
+  stevefulme1.pagerduty.user:
+    id: "existing_id"
+
+
+
+
+    role: "updated_role"
+
+
+    state: present
+  # API:  
+
+
 
 - name: Delete a user
-  pagerduty.pagerduty.user:
-    name: Jane Doe
-    email: jane.doe@example.com
+  stevefulme1.pagerduty.user:
+    id: "existing_id"
     state: absent
-    api_token: "{{ pagerduty_token }}"
-'''
+  # API: DELETE /users/{id}
 
-RETURN = r'''
+"""
+
+RETURN = r"""
+
 user:
-  description: The user object.
-  type: dict
+  description: >-
+    
   returned: success
-'''
+  type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
-def find_user_by_email(pd, email):
-    params = {'query': email}
-    users = pd.client.list_all('/users', 'users', params=params)
-    for u in users:
-        if u.get('email') == email:
-            return u
-    return None
+def get_current_state(client, module):
+    """Retrieve the current state of the user via GET."""
+
+    # No single-resource GET endpoint; fall back to list + filter
+    identifier = module.params.get("id")
+
+    search_key = "id"
+    search_value = identifier
+
+    if search_value is None:
+        return None
+    try:
+        items = client.get("/users")
+        if isinstance(items, dict):
+            items = items.get("results", items.get("data", items.get("items", [])))
+        for item in items:
+            if str(item.get(search_key)) == str(search_value):
+                return item
+            if str(item.get("id")) == str(search_value):
+                return item
+        return None
+    except ClientError:
+        return None
 
 
-def build_user_data(module):
-    data = {
-        'name': module.params['name'],
-        'email': module.params['email'],
-        'type': 'user',
-    }
-    for key in ('role', 'time_zone', 'color', 'description', 'job_title'):
-        if module.params.get(key) is not None:
-            data[key] = module.params[key]
-    return data
+
+def needs_update(current, desired):
+    """Compare current state against desired params and return True if an update is needed."""
+    if current is None:
+        return True
+    for key, value in desired.items():
+        if value is None:
+            continue
+        current_value = current.get(key)
+        if current_value != value:
+            return True
+    return False
+
+
+def build_payload(module):
+    """Build the API request payload from module params."""
+    payload = {}
+
+    if module.params.get("user") is not None:
+        payload["user"] = module.params["user"]
+
+    if module.params.get("role") is not None:
+        payload["role"] = module.params["role"]
+
+    return payload
 
 
 def main():
-    argument_spec = dict(
-        name=dict(type='str', required=True),
-        email=dict(type='str', required=True),
-        role=dict(type='str', choices=[
-            'admin', 'limited_user', 'observer', 'owner',
-            'read_only_limited_user', 'read_only_user', 'restricted_access', 'user',
-        ]),
-        time_zone=dict(type='str'),
-        color=dict(type='str'),
-        description=dict(type='str'),
-        job_title=dict(type='str'),
-        state=dict(type='str', choices=['present', 'absent'], default='present'),
-    )
-    argument_spec.update(PAGERDUTY_COMMON_ARGS)
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            state=dict(type="str", choices=["present", "absent"], default="present"),
 
-    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
-    pd = PagerDutyModule(module)
+            user=dict(
+                type="dict",
+
+                required=True,
+
+
+
+
+
+            ),
+
+            role=dict(
+                type="str",
+
+
+                choices=['observer', 'responder', 'manager'],
+
+
+
+
+            ),
+
+        )
+    )
+
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+
+    )
+
+    state = module.params["state"]
+    result = dict(changed=False, diff=dict(before={}, after={}))
 
     try:
-        existing = find_user_by_email(pd, module.params['email'])
+        client = Client(module)
+        current = get_current_state(client, module)
 
-        if module.params['state'] == 'present':
-            desired = build_user_data(module)
-            if existing:
-                compare_keys = ['name', 'email', 'role', 'time_zone', 'color', 'description', 'job_title']
-                changes = pd._diff(existing, desired, compare_keys)
-                if changes:
-                    if not pd.check_mode:
-                        result = pd.client.put('/users/{0}'.format(existing['id']), {'user': changes})
-                        pd.result['user'] = result.get('user', result)
-                    else:
-                        pd.result['user'] = existing
-                    pd.result['changed'] = True
-                else:
-                    pd.result['user'] = existing
+        if state == "present":
+            desired = build_payload(module)
+
+            if current is None:
+                # Resource does not exist — create it
+                result["changed"] = True
+                result["diff"]["before"] = {}
+                result["diff"]["after"] = desired
+
+                if not module.check_mode:
+
+                    response = client.POST(
+                        "/users",
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
+            elif needs_update(current, desired):
+                # Resource exists but needs updating
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = dict(current, **{k: v for k, v in desired.items() if v is not None})
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "".replace(
+                        "{id}", str(identifier)
+                    )
+                    response = client.put(
+                        path,
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
             else:
-                if not pd.check_mode:
-                    result = pd.client.post('/users', {'user': desired})
-                    pd.result['user'] = result.get('user', result)
-                pd.result['changed'] = True
-        else:
-            if existing:
-                if not pd.check_mode:
-                    pd.client.delete('/users/{0}'.format(existing['id']))
-                pd.result['changed'] = True
+                # Resource exists and is up-to-date
 
-        pd.exit()
-    except PagerDutyError as e:
-        pd.fail(str(e))
+                result["user"] = current.get("user")
 
 
-if __name__ == '__main__':
+        elif state == "absent":
+            if current is not None:
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = {}
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "/users/{id}".replace(
+                        "{id}", str(identifier)
+                    )
+                    client.delete(path)
+
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
+
+
+if __name__ == "__main__":
     main()

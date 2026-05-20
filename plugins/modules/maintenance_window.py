@@ -1,189 +1,244 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: maintenance_window
-short_description: Manage PagerDuty maintenance windows
-description:
-  - Create, update, and delete PagerDuty maintenance windows.
-  - Maintenance windows temporarily disable alerts for specified services.
+short_description: Manage maintenance windows
 version_added: "1.0.0"
-author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
+description:
+  - Create, update, and delete maintenance_window resources.
+  - Supports check mode and diff mode for safe operations.
+author:
+  - "Auto-generated"
 options:
-  id:
-    description: Maintenance window ID for updates or deletion.
-    type: str
-  description:
-    description: Description of the maintenance window.
-    type: str
-  start_time:
-    description:
-      - Start time in ISO 8601 format.
-      - Required when creating a maintenance window.
-    type: str
-  end_time:
-    description:
-      - End time in ISO 8601 format.
-      - Required when creating a maintenance window.
-    type: str
-  services:
-    description:
-      - List of service names or IDs to include in the maintenance window.
-      - Required when creating a maintenance window.
-    type: list
-    elements: str
   state:
-    description: Desired state.
+    description:
+      - Desired state of the maintenance_window resource.
     type: str
-    choices: [present, absent]
+    choices: ['present', 'absent']
     default: present
+
+  maintenance_window:
+    description:
+      - >-
+        
+    type: dict
+
+    required: true
+
+
+
+
+
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
-- name: Create a maintenance window
-  pagerduty.pagerduty.maintenance_window:
-    api_token: "{{ pd_token }}"
-    description: "Scheduled deployment window"
-    start_time: "2024-12-01T02:00:00Z"
-    end_time: "2024-12-01T04:00:00Z"
-    services:
-      - "Web Application"
-      - "API Gateway"
+EXAMPLES = r"""
+
+- name: Create a maintenance_window
+  stevefulme1.pagerduty.maintenance_window:
+
+
+    maintenance_window: "example_maintenance_window"
+
+
     state: present
+  # API: POST /maintenance_windows
 
-- name: Delete a maintenance window
-  pagerduty.pagerduty.maintenance_window:
-    api_token: "{{ pd_token }}"
-    id: "P1234567"
+
+
+- name: Update a maintenance_window
+  stevefulme1.pagerduty.maintenance_window:
+    id: "existing_id"
+
+
+
+    state: present
+  # API:  
+
+
+
+- name: Delete a maintenance_window
+  stevefulme1.pagerduty.maintenance_window:
+    id: "existing_id"
     state: absent
-'''
+  # API: DELETE /maintenance_windows/{id}
 
-RETURN = r'''
+"""
+
+RETURN = r"""
+
 maintenance_window:
-  description: The maintenance window object.
-  type: dict
+  description: >-
+    
   returned: success
-'''
+  type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
-def resolve_services(client, services):
-    refs = []
-    for svc in services:
-        if svc.startswith('P') and len(svc) >= 7:
-            refs.append({'id': svc, 'type': 'service_reference'})
-        else:
-            found = client.find_by_name('/services', 'services', svc)
-            if not found:
-                raise PagerDutyError('Could not find service "{0}"'.format(svc))
-            refs.append({'id': found['id'], 'type': 'service_reference'})
-    return refs
+def get_current_state(client, module):
+    """Retrieve the current state of the maintenance_window via GET."""
+
+    # No single-resource GET endpoint; fall back to list + filter
+    identifier = module.params.get("id")
+
+    search_key = "id"
+    search_value = identifier
+
+    if search_value is None:
+        return None
+    try:
+        items = client.get("/maintenance_windows")
+        if isinstance(items, dict):
+            items = items.get("results", items.get("data", items.get("items", [])))
+        for item in items:
+            if str(item.get(search_key)) == str(search_value):
+                return item
+            if str(item.get("id")) == str(search_value):
+                return item
+        return None
+    except ClientError:
+        return None
 
 
-def find_window_by_description(client, description, services):
-    """Find an existing maintenance window by description and service overlap."""
-    params = {'filter': 'future'}
-    windows = client.list_all('/maintenance_windows', 'maintenance_windows', params=params)
-    for w in windows:
-        if w.get('description') == description:
-            return w
-    return None
+
+def needs_update(current, desired):
+    """Compare current state against desired params and return True if an update is needed."""
+    if current is None:
+        return True
+    for key, value in desired.items():
+        if value is None:
+            continue
+        current_value = current.get(key)
+        if current_value != value:
+            return True
+    return False
+
+
+def build_payload(module):
+    """Build the API request payload from module params."""
+    payload = {}
+
+    if module.params.get("maintenance_window") is not None:
+        payload["maintenance_window"] = module.params["maintenance_window"]
+
+    return payload
 
 
 def main():
-    argument_spec = dict(
-        id=dict(type='str'),
-        description=dict(type='str'),
-        start_time=dict(type='str'),
-        end_time=dict(type='str'),
-        services=dict(type='list', elements='str'),
-        state=dict(type='str', default='present', choices=['present', 'absent']),
-        **PAGERDUTY_COMMON_ARGS,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            state=dict(type="str", choices=["present", "absent"], default="present"),
+
+            maintenance_window=dict(
+                type="dict",
+
+                required=True,
+
+
+
+
+
+            ),
+
+        )
     )
 
     module = AnsibleModule(
-        argument_spec=argument_spec,
+        argument_spec=spec,
         supports_check_mode=True,
-        required_if=[
-            ('state', 'present', ('start_time', 'end_time', 'services')),
-            ('state', 'absent', ('id',)),
-        ],
+
     )
 
-    pd = PagerDutyModule(module)
-    params = module.params
-    path = '/maintenance_windows'
+    state = module.params["state"]
+    result = dict(changed=False, diff=dict(before={}, after={}))
 
     try:
-        if params['state'] == 'absent':
-            window_id = params['id']
-            existing = pd.client.find_by_id('{0}/{1}'.format(path, window_id), 'maintenance_window')
-            if existing:
-                if not pd.check_mode:
-                    pd.client.delete('{0}/{1}'.format(path, window_id))
-                pd.result['changed'] = True
-        else:
-            service_refs = resolve_services(pd.client, params['services'])
-            create_data = {
-                'type': 'maintenance_window',
-                'start_time': params['start_time'],
-                'end_time': params['end_time'],
-                'services': service_refs,
-            }
-            if params.get('description'):
-                create_data['description'] = params['description']
+        client = Client(module)
+        current = get_current_state(client, module)
 
-            existing = None
-            if params.get('id'):
-                existing = pd.client.find_by_id(
-                    '{0}/{1}'.format(path, params['id']), 'maintenance_window'
-                )
-            elif params.get('description'):
-                existing = find_window_by_description(pd.client, params['description'], service_refs)
+        if state == "present":
+            desired = build_payload(module)
 
-            if existing:
-                changes = {}
-                for key in ['start_time', 'end_time', 'description']:
-                    if params.get(key) and existing.get(key) != params[key]:
-                        changes[key] = params[key]
+            if current is None:
+                # Resource does not exist — create it
+                result["changed"] = True
+                result["diff"]["before"] = {}
+                result["diff"]["after"] = desired
 
-                current_svc_ids = sorted([s['id'] for s in existing.get('services', [])])
-                desired_svc_ids = sorted([s['id'] for s in service_refs])
-                if current_svc_ids != desired_svc_ids:
-                    changes['services'] = service_refs
+                if not module.check_mode:
 
-                if changes:
-                    changes['type'] = 'maintenance_window'
-                    if not pd.check_mode:
-                        result = pd.client.put(
-                            '{0}/{1}'.format(path, existing['id']),
-                            {'maintenance_window': changes}
-                        )
-                        pd.result['maintenance_window'] = result.get('maintenance_window', result)
-                    pd.result['changed'] = True
-                else:
-                    pd.result['maintenance_window'] = existing
+                    response = client.POST(
+                        "/maintenance_windows",
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
+            elif needs_update(current, desired):
+                # Resource exists but needs updating
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = dict(current, **{k: v for k, v in desired.items() if v is not None})
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "".replace(
+                        "{id}", str(identifier)
+                    )
+                    response = client.put(
+                        path,
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
             else:
-                if not pd.check_mode:
-                    result = pd.client.post(path, {'maintenance_window': create_data})
-                    pd.result['maintenance_window'] = result.get('maintenance_window', result)
-                pd.result['changed'] = True
+                # Resource exists and is up-to-date
 
-        pd.exit()
-    except PagerDutyError as e:
-        pd.fail(str(e))
+                result["maintenance_window"] = current.get("maintenance_window")
 
 
-if __name__ == '__main__':
+        elif state == "absent":
+            if current is not None:
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = {}
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "/maintenance_windows/{id}".replace(
+                        "{id}", str(identifier)
+                    )
+                    client.delete(path)
+
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
+
+
+if __name__ == "__main__":
     main()

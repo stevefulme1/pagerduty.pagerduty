@@ -1,121 +1,178 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: escalation_policy_info
-short_description: List or get PagerDuty escalation policies
-description:
-  - Retrieve a single escalation policy by ID or name, or list all with optional filters.
+short_description: Retrieve information about escalation_policy resources
 version_added: "1.0.0"
-author: "PagerDuty (@PagerDuty)"
+description:
+  - Retrieve a single escalation_policy by its identifier, or list all escalation_policy resources.
+  - This module always reports C(changed=False).
+author:
+  - "Auto-generated"
 options:
   id:
-    description: The ID of a specific escalation policy to retrieve.
+    description:
+      - The unique identifier of the escalation_policy to retrieve.
+      - When omitted, all escalation_policy resources are listed.
     type: str
-  name:
-    description: Filter escalation policies by exact name match.
-    type: str
-  user_ids:
-    description: List of user IDs to filter by.
-    type: list
-    elements: str
-  team_ids:
-    description: List of team IDs to filter by.
-    type: list
-    elements: str
+    required: false
 
-  limit:
+
+
+
+  page:
     description:
-      - Maximum number of results to return per request.
-      - PagerDuty API default is 25, max is 100.
+      - Page number for paginated results.
+      - Only applies when listing resources.
     type: int
-    default: 100
-  offset:
+    required: false
+  page_size:
     description:
-      - Pagination offset (number of records to skip).
-      - Used for manual pagination through large result sets.
+      - Number of results per page.
+      - Only applies when listing resources.
     type: int
-    default: 0
-  max_results:
-    description:
-      - Maximum total number of results to return across all pages.
-      - Set to 0 for no limit.
-    type: int
-    default: 1000
+    required: false
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
-- name: Get a specific escalation policy
-  pagerduty.pagerduty.escalation_policy_info:
-    id: PPOLICY1
+EXAMPLES = r"""
+- name: Get a specific escalation_policy
+  stevefulme1.pagerduty.escalation_policy_info:
+    id: "example_id"
   register: result
 
-- name: Find escalation policies for a team
-  pagerduty.pagerduty.escalation_policy_info:
-    team_ids: ["PTEAM01"]
+- name: List all escalation_policy resources
+  stevefulme1.pagerduty.escalation_policy_info:
   register: result
-'''
 
-RETURN = r'''
-escalation_policies:
-  description: List of escalation policies matching the query.
-  type: list
+
+
+- name: List escalation_policy resources with pagination
+  stevefulme1.pagerduty.escalation_policy_info:
+    page: 1
+    page_size: 50
+  register: result
+"""
+
+RETURN = r"""
+escalation_policys:
+  description: List of escalation_policy resources matching the query.
   returned: always
-'''
+  type: list
+  elements: dict
+  contains:
+
+    escalation_policy:
+      description: >-
+        
+      type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyClient, PagerDutyError,
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
+def fetch_single(client, identifier):
+    """Retrieve a single escalation_policy by identifier."""
+
+    # No single-resource GET endpoint; filter from list
+    items = client.get("/escalation_policies")
+    if isinstance(items, dict):
+        items = items.get("results", items.get("data", items.get("items", [])))
+    for item in items:
+        if str(item.get("id")) == str(identifier):
+            return item
+    return None
+
+
+
+def fetch_list(client, module):
+    """List escalation_policy resources with optional filtering and pagination."""
+
+    params = {}
+
+
+
+
+
+
+
+    page = module.params.get("page")
+    page_size = module.params.get("page_size")
+
+    if page is not None or page_size is not None:
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        response = client.get("/escalation_policies", params=params)
+        if isinstance(response, dict):
+            return response.get("results", response.get("data", response.get("items", [])))
+        return response if isinstance(response, list) else []
+    else:
+        return client.get_paginated("/escalation_policies", params=params)
+
+
+
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            id=dict(type='str'),
-            name=dict(type='str'),
-            user_ids=dict(type='list', elements='str'),
-            team_ids=dict(type='list', elements='str'),
-            limit=dict(type='int', default=100),
-            offset=dict(type='int', default=0),
-            max_results=dict(type='int', default=1000),
-            **PAGERDUTY_COMMON_ARGS
-        ),
-        supports_check_mode=True,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            id=dict(type="str", required=False),
+
+
+
+
+            page=dict(type="int", required=False),
+            page_size=dict(type="int", required=False),
+        )
     )
 
-    client = PagerDutyClient(module)
-    params = module.params
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ("id", "page"),
+            ("id", "page_size"),
+        ],
+    )
+
+    result = dict(
+        changed=False,
+        escalation_policys=[],
+    )
 
     try:
-        if params['id']:
-            ep = client.get('/escalation_policies/{0}'.format(params['id']))
-            module.exit_json(changed=False, escalation_policies=[ep.get('escalation_policy', ep)])
+        client = Client(module)
+        identifier = module.params.get("id")
+
+        if identifier is not None:
+            item = fetch_single(client, identifier)
+            result["escalation_policys"] = [item] if item else []
         else:
-            qp = {}
-            if params['name']:
-                qp['query'] = params['name']
-            if params['user_ids']:
-                qp['user_ids[]'] = ','.join(params['user_ids'])
-            if params['team_ids']:
-                qp['team_ids[]'] = ','.join(params['team_ids'])
-            if params.get('limit'):
-                qp['limit'] = params['limit']
-            if params.get('offset'):
-                qp['offset'] = params['offset']
-            eps = client.list_all('/escalation_policies', 'escalation_policies', params=qp or None)
-            if params['name']:
-                eps = [e for e in eps if e.get('name') == params['name']]
-            module.exit_json(changed=False, escalation_policies=eps)
-    except PagerDutyError as e:
-        module.fail_json(msg=str(e))
+            result["escalation_policys"] = fetch_list(client, module)
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

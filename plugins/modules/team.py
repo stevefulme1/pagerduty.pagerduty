@@ -1,128 +1,244 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: team
-short_description: Manage PagerDuty teams
-description:
-  - Create, update, or delete PagerDuty teams.
+short_description: Manage teams
 version_added: "1.0.0"
-author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
+description:
+  - Create, update, and delete team resources.
+  - Supports check mode and diff mode for safe operations.
+author:
+  - "Auto-generated"
 options:
-  name:
-    description: The name of the team.
-    type: str
-    required: true
-  description:
-    description: A description of the team.
-    type: str
-  parent:
-    description: The parent team name or ID for nested teams.
-    type: str
   state:
-    description: Whether the team should exist.
+    description:
+      - Desired state of the team resource.
     type: str
-    choices: [present, absent]
+    choices: ['present', 'absent']
     default: present
+
+  team:
+    description:
+      - >-
+        
+    type: dict
+
+    required: true
+
+
+
+
+
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
+
 - name: Create a team
-  pagerduty.pagerduty.team:
-    name: Engineering
-    description: Engineering team
-    api_token: "{{ pagerduty_token }}"
+  stevefulme1.pagerduty.team:
 
-- name: Create a sub-team
-  pagerduty.pagerduty.team:
-    name: Backend Engineering
-    description: Backend sub-team
-    parent: Engineering
-    api_token: "{{ pagerduty_token }}"
+
+    team: "example_team"
+
+
+    state: present
+  # API: POST /teams
+
+
+
+- name: Update a team
+  stevefulme1.pagerduty.team:
+    id: "existing_id"
+
+
+
+    state: present
+  # API:  
+
+
 
 - name: Delete a team
-  pagerduty.pagerduty.team:
-    name: Engineering
+  stevefulme1.pagerduty.team:
+    id: "existing_id"
     state: absent
-    api_token: "{{ pagerduty_token }}"
-'''
+  # API: DELETE /teams/{id}
 
-RETURN = r'''
+"""
+
+RETURN = r"""
+
 team:
-  description: The team object.
-  type: dict
+  description: >-
+    
   returned: success
-'''
+  type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
-def resolve_parent(pd, parent_param):
-    if not parent_param:
+def get_current_state(client, module):
+    """Retrieve the current state of the team via GET."""
+
+    # No single-resource GET endpoint; fall back to list + filter
+    identifier = module.params.get("id")
+
+    search_key = "id"
+    search_value = identifier
+
+    if search_value is None:
         return None
-    if parent_param.startswith('P') and len(parent_param) >= 7:
-        return {'id': parent_param, 'type': 'team_reference'}
-    team = pd.client.find_by_name('/teams', 'teams', parent_param)
-    if not team:
-        pd.fail('Parent team not found: {0}'.format(parent_param))
-    return {'id': team['id'], 'type': 'team_reference'}
+    try:
+        items = client.get("/teams")
+        if isinstance(items, dict):
+            items = items.get("results", items.get("data", items.get("items", [])))
+        for item in items:
+            if str(item.get(search_key)) == str(search_value):
+                return item
+            if str(item.get("id")) == str(search_value):
+                return item
+        return None
+    except ClientError:
+        return None
 
 
-def build_team_data(pd):
-    params = pd.module.params
-    data = {'name': params['name'], 'type': 'team'}
-    if params.get('description') is not None:
-        data['description'] = params['description']
-    parent = resolve_parent(pd, params.get('parent'))
-    if parent:
-        data['parent'] = parent
-    return data
+
+def needs_update(current, desired):
+    """Compare current state against desired params and return True if an update is needed."""
+    if current is None:
+        return True
+    for key, value in desired.items():
+        if value is None:
+            continue
+        current_value = current.get(key)
+        if current_value != value:
+            return True
+    return False
+
+
+def build_payload(module):
+    """Build the API request payload from module params."""
+    payload = {}
+
+    if module.params.get("team") is not None:
+        payload["team"] = module.params["team"]
+
+    return payload
 
 
 def main():
-    argument_spec = dict(
-        name=dict(type='str', required=True),
-        description=dict(type='str'),
-        parent=dict(type='str'),
-        state=dict(type='str', choices=['present', 'absent'], default='present'),
-    )
-    argument_spec.update(PAGERDUTY_COMMON_ARGS)
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            state=dict(type="str", choices=["present", "absent"], default="present"),
 
-    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
-    pd = PagerDutyModule(module)
+            team=dict(
+                type="dict",
+
+                required=True,
+
+
+
+
+
+            ),
+
+        )
+    )
+
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+
+    )
+
+    state = module.params["state"]
+    result = dict(changed=False, diff=dict(before={}, after={}))
 
     try:
-        if module.params['state'] == 'present':
-            pd.ensure_present(
-                resource_key='team',
-                find_path='/teams',
-                find_key='teams',
-                create_path='/teams',
-                create_data=build_team_data(pd),
-                update_path_tmpl='/teams/{id}',
-                update_data_fn=lambda: build_team_data(pd),
-                compare_keys=['name', 'description', 'parent'],
-            )
-        else:
-            pd.ensure_absent(
-                resource_key='team',
-                find_path='/teams',
-                find_key='teams',
-                delete_path_tmpl='/teams/{id}',
-            )
-        pd.exit()
-    except PagerDutyError as e:
-        pd.fail(str(e))
+        client = Client(module)
+        current = get_current_state(client, module)
+
+        if state == "present":
+            desired = build_payload(module)
+
+            if current is None:
+                # Resource does not exist — create it
+                result["changed"] = True
+                result["diff"]["before"] = {}
+                result["diff"]["after"] = desired
+
+                if not module.check_mode:
+
+                    response = client.POST(
+                        "/teams",
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
 
 
-if __name__ == '__main__':
+            elif needs_update(current, desired):
+                # Resource exists but needs updating
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = dict(current, **{k: v for k, v in desired.items() if v is not None})
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "".replace(
+                        "{id}", str(identifier)
+                    )
+                    response = client.put(
+                        path,
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
+            else:
+                # Resource exists and is up-to-date
+
+                result["team"] = current.get("team")
+
+
+        elif state == "absent":
+            if current is not None:
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = {}
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "/teams/{id}".replace(
+                        "{id}", str(identifier)
+                    )
+                    client.delete(path)
+
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
+
+
+if __name__ == "__main__":
     main()

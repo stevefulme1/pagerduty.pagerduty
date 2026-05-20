@@ -1,122 +1,178 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: schedule_info
-short_description: List or get PagerDuty schedules
-description:
-  - Retrieve a single schedule by ID or name, or list all schedules.
-  - When retrieving by ID with since/until, returns the rendered schedule.
+short_description: Retrieve information about schedule resources
 version_added: "1.0.0"
-author: "PagerDuty (@PagerDuty)"
+description:
+  - Retrieve a single schedule by its identifier, or list all schedule resources.
+  - This module always reports C(changed=False).
+author:
+  - "Auto-generated"
 options:
   id:
-    description: The ID of a specific schedule to retrieve.
+    description:
+      - The unique identifier of the schedule to retrieve.
+      - When omitted, all schedule resources are listed.
     type: str
-  name:
-    description: Filter schedules by exact name match.
-    type: str
-  since:
-    description: Start of date range for rendered schedule (ISO 8601).
-    type: str
-  until:
-    description: End of date range for rendered schedule (ISO 8601).
-    type: str
+    required: false
 
-  limit:
+
+
+
+  page:
     description:
-      - Maximum number of results to return per request.
-      - PagerDuty API default is 25, max is 100.
+      - Page number for paginated results.
+      - Only applies when listing resources.
     type: int
-    default: 100
-  offset:
+    required: false
+  page_size:
     description:
-      - Pagination offset (number of records to skip).
-      - Used for manual pagination through large result sets.
+      - Number of results per page.
+      - Only applies when listing resources.
     type: int
-    default: 0
-  max_results:
-    description:
-      - Maximum total number of results to return across all pages.
-      - Set to 0 for no limit.
-    type: int
-    default: 1000
+    required: false
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
-- name: Get a specific schedule with rendered entries
-  pagerduty.pagerduty.schedule_info:
-    id: PSCHED01
-    since: "2024-01-01T00:00:00Z"
-    until: "2024-01-07T00:00:00Z"
+EXAMPLES = r"""
+- name: Get a specific schedule
+  stevefulme1.pagerduty.schedule_info:
+    id: "example_id"
   register: result
 
-- name: List all schedules
-  pagerduty.pagerduty.schedule_info:
+- name: List all schedule resources
+  stevefulme1.pagerduty.schedule_info:
   register: result
-'''
 
-RETURN = r'''
+
+
+- name: List schedule resources with pagination
+  stevefulme1.pagerduty.schedule_info:
+    page: 1
+    page_size: 50
+  register: result
+"""
+
+RETURN = r"""
 schedules:
-  description: List of schedules matching the query.
-  type: list
+  description: List of schedule resources matching the query.
   returned: always
-'''
+  type: list
+  elements: dict
+  contains:
+
+    schedule:
+      description: >-
+        
+      type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyClient, PagerDutyError,
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
+def fetch_single(client, identifier):
+    """Retrieve a single schedule by identifier."""
+
+    # No single-resource GET endpoint; filter from list
+    items = client.get("/v3/schedules")
+    if isinstance(items, dict):
+        items = items.get("results", items.get("data", items.get("items", [])))
+    for item in items:
+        if str(item.get("id")) == str(identifier):
+            return item
+    return None
+
+
+
+def fetch_list(client, module):
+    """List schedule resources with optional filtering and pagination."""
+
+    params = {}
+
+
+
+
+
+
+
+    page = module.params.get("page")
+    page_size = module.params.get("page_size")
+
+    if page is not None or page_size is not None:
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        response = client.get("/v3/schedules", params=params)
+        if isinstance(response, dict):
+            return response.get("results", response.get("data", response.get("items", [])))
+        return response if isinstance(response, list) else []
+    else:
+        return client.get_paginated("/v3/schedules", params=params)
+
+
+
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            id=dict(type='str'),
-            name=dict(type='str'),
-            since=dict(type='str'),
-            until=dict(type='str'),
-            limit=dict(type='int', default=100),
-            offset=dict(type='int', default=0),
-            max_results=dict(type='int', default=1000),
-            **PAGERDUTY_COMMON_ARGS
-        ),
-        supports_check_mode=True,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            id=dict(type="str", required=False),
+
+
+
+
+            page=dict(type="int", required=False),
+            page_size=dict(type="int", required=False),
+        )
     )
 
-    client = PagerDutyClient(module)
-    params = module.params
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ("id", "page"),
+            ("id", "page_size"),
+        ],
+    )
+
+    result = dict(
+        changed=False,
+        schedules=[],
+    )
 
     try:
-        if params['id']:
-            qp = {}
-            if params['since']:
-                qp['since'] = params['since']
-            if params['until']:
-                qp['until'] = params['until']
-            sched = client.get('/schedules/{0}'.format(params['id']), params=qp or None)
-            module.exit_json(changed=False, schedules=[sched.get('schedule', sched)])
+        client = Client(module)
+        identifier = module.params.get("id")
+
+        if identifier is not None:
+            item = fetch_single(client, identifier)
+            result["schedules"] = [item] if item else []
         else:
-            qp = {}
-            if params['name']:
-                qp['query'] = params['name']
-            if params.get('limit'):
-                qp['limit'] = params['limit']
-            if params.get('offset'):
-                qp['offset'] = params['offset']
-            schedules = client.list_all('/schedules', 'schedules', params=qp or None)
-            if params['name']:
-                schedules = [s for s in schedules if s.get('name') == params['name']]
-            module.exit_json(changed=False, schedules=schedules)
-    except PagerDutyError as e:
-        module.fail_json(msg=str(e))
+            result["schedules"] = fetch_list(client, module)
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

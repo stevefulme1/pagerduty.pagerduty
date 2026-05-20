@@ -1,9 +1,0 @@
----
-argument_specs:
-  main:
-    short_description: "Migrate PagerDuty legacy rulesets to event orchestration"
-    options:
-      migration_api_token:
-        description: PagerDuty API authentication token.
-        type: str
-        no_log: true

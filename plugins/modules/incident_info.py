@@ -1,142 +1,184 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: incident_info
-short_description: List or get PagerDuty incidents
-description:
-  - Retrieve a single incident by ID or list incidents with filters.
+short_description: Retrieve information about incident resources
 version_added: "1.0.0"
-author: "PagerDuty (@PagerDuty)"
+description:
+  - Retrieve a single incident by its identifier, or list all incident resources.
+  - This module always reports C(changed=False).
+author:
+  - "Auto-generated"
 options:
   id:
-    description: The ID of a specific incident to retrieve.
+    description:
+      - The unique identifier of the incident to retrieve.
+      - When omitted, all incident resources are listed.
     type: str
-  statuses:
-    description: Filter by incident statuses.
-    type: list
-    elements: str
-    choices: [triggered, acknowledged, resolved]
-  service_ids:
-    description: List of service IDs to filter by.
-    type: list
-    elements: str
-  urgencies:
-    description: Filter by urgency levels.
-    type: list
-    elements: str
-    choices: [high, low]
-  since:
-    description: Start of date range (ISO 8601).
-    type: str
-  until:
-    description: End of date range (ISO 8601).
-    type: str
-  sort_by:
-    description: Sort field and direction.
-    type: str
-    choices: [incident_number:asc, incident_number:desc, created_at:asc, created_at:desc,
-              resolved_at:asc, resolved_at:desc, urgency:asc, urgency:desc]
-  limit:
-    description: Maximum number of results to return per page.
+    required: false
+
+
+
+
+
+
+  page:
+    description:
+      - Page number for paginated results.
+      - Only applies when listing resources.
     type: int
-    default: 25
-  offset:
-    description: Offset for pagination.
+    required: false
+  page_size:
+    description:
+      - Number of results per page.
+      - Only applies when listing resources.
     type: int
-    default: 0
+    required: false
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Get a specific incident
-  pagerduty.pagerduty.incident_info:
-    id: PINC001
+  stevefulme1.pagerduty.incident_info:
+    id: "example_id"
   register: result
 
-- name: List all triggered and acknowledged incidents
-  pagerduty.pagerduty.incident_info:
-    statuses: [triggered, acknowledged]
+- name: List all incident resources
+  stevefulme1.pagerduty.incident_info:
   register: result
 
-- name: List high-urgency incidents for a service
-  pagerduty.pagerduty.incident_info:
-    service_ids: ["PSVC01"]
-    urgencies: [high]
-    since: "2024-01-01T00:00:00Z"
-  register: result
-'''
 
-RETURN = r'''
+
+- name: List incident resources with pagination
+  stevefulme1.pagerduty.incident_info:
+    page: 1
+    page_size: 50
+  register: result
+"""
+
+RETURN = r"""
 incidents:
-  description: List of incidents matching the query.
-  type: list
+  description: List of incident resources matching the query.
   returned: always
-'''
+  type: list
+  elements: dict
+  contains:
+
+    incident:
+      description: >-
+        
+      type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyClient, PagerDutyError,
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
+def fetch_single(client, identifier):
+    """Retrieve a single incident by identifier."""
+
+    # No single-resource GET endpoint; filter from list
+    items = client.get("/incidents")
+    if isinstance(items, dict):
+        items = items.get("results", items.get("data", items.get("items", [])))
+    for item in items:
+        if str(item.get("id")) == str(identifier):
+            return item
+    return None
+
+
+
+def fetch_list(client, module):
+    """List incident resources with optional filtering and pagination."""
+
+    params = {}
+
+
+
+
+
+
+
+
+
+    page = module.params.get("page")
+    page_size = module.params.get("page_size")
+
+    if page is not None or page_size is not None:
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        response = client.get("/incidents", params=params)
+        if isinstance(response, dict):
+            return response.get("results", response.get("data", response.get("items", [])))
+        return response if isinstance(response, list) else []
+    else:
+        return client.get_paginated("/incidents", params=params)
+
+
+
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            id=dict(type='str'),
-            statuses=dict(type='list', elements='str', choices=['triggered', 'acknowledged', 'resolved']),
-            service_ids=dict(type='list', elements='str'),
-            urgencies=dict(type='list', elements='str', choices=['high', 'low']),
-            since=dict(type='str'),
-            until=dict(type='str'),
-            sort_by=dict(type='str', choices=[
-                'incident_number:asc', 'incident_number:desc',
-                'created_at:asc', 'created_at:desc',
-                'resolved_at:asc', 'resolved_at:desc',
-                'urgency:asc', 'urgency:desc',
-            ]),
-            limit=dict(type='int', default=25),
-            offset=dict(type='int', default=0),
-            **PAGERDUTY_COMMON_ARGS
-        ),
-        supports_check_mode=True,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            id=dict(type="str", required=False),
+
+
+
+
+
+
+            page=dict(type="int", required=False),
+            page_size=dict(type="int", required=False),
+        )
     )
 
-    client = PagerDutyClient(module)
-    params = module.params
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ("id", "page"),
+            ("id", "page_size"),
+        ],
+    )
+
+    result = dict(
+        changed=False,
+        incidents=[],
+    )
 
     try:
-        if params['id']:
-            inc = client.get('/incidents/{0}'.format(params['id']))
-            module.exit_json(changed=False, incidents=[inc.get('incident', inc)])
+        client = Client(module)
+        identifier = module.params.get("id")
+
+        if identifier is not None:
+            item = fetch_single(client, identifier)
+            result["incidents"] = [item] if item else []
         else:
-            qp = {}
-            if params['statuses']:
-                qp['statuses[]'] = ','.join(params['statuses'])
-            if params['service_ids']:
-                qp['service_ids[]'] = ','.join(params['service_ids'])
-            if params['urgencies']:
-                qp['urgencies[]'] = ','.join(params['urgencies'])
-            if params['since']:
-                qp['since'] = params['since']
-            if params['until']:
-                qp['until'] = params['until']
-            if params['sort_by']:
-                qp['sort_by'] = params['sort_by']
-            if params['limit']:
-                qp['limit'] = params['limit']
-            if params['offset']:
-                qp['offset'] = params['offset']
-            incidents = client.list_all('/incidents', 'incidents', params=qp or None)
-            module.exit_json(changed=False, incidents=incidents)
-    except PagerDutyError as e:
-        module.fail_json(msg=str(e))
+            result["incidents"] = fetch_list(client, module)
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

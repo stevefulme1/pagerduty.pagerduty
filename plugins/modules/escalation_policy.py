@@ -1,134 +1,244 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: escalation_policy
-short_description: Manage PagerDuty escalation policies
-description:
-  - Create, update, or delete PagerDuty escalation policies.
+short_description: Manage escalation policies
 version_added: "1.0.0"
-author: Ansible Ansible PagerDuty Collection Authors (@ansible-collections) (@ansible-collections)
+description:
+  - Create, update, and delete escalation_policy resources.
+  - Supports check mode and diff mode for safe operations.
+author:
+  - "Auto-generated"
 options:
-  name:
-    description: The name of the escalation policy.
-    type: str
-    required: true
-  description:
-    description: A description for the escalation policy.
-    type: str
-  num_loops:
-    description: Number of times the escalation policy will repeat after reaching the end.
-    type: int
-    default: 0
-  on_call_handoff_notifications:
-    description: How on-call handoff notifications are sent.
-    type: str
-    choices: [if_has_services, always]
-  rules:
-    description: >
-      List of escalation rules. Each rule is a dict with escalation_delay_in_minutes
-      and targets (list of dicts with type and id).
-    type: list
-    elements: dict
   state:
-    description: Whether the escalation policy should exist.
+    description:
+      - Desired state of the escalation_policy resource.
     type: str
-    choices: [present, absent]
+    choices: ['present', 'absent']
     default: present
+
+  escalation_policy:
+    description:
+      - >-
+        
+    type: dict
+
+    required: true
+
+
+
+
+
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
-- name: Create an escalation policy
-  pagerduty.pagerduty.escalation_policy:
-    name: Engineering On-Call
-    description: Primary engineering escalation
-    num_loops: 2
-    rules:
-      - escalation_delay_in_minutes: 30
-        targets:
-          - type: user_reference
-            id: PUSER123
-    api_token: "{{ pagerduty_token }}"
+EXAMPLES = r"""
 
-- name: Delete an escalation policy
-  pagerduty.pagerduty.escalation_policy:
-    name: Engineering On-Call
+- name: Create a escalation_policy
+  stevefulme1.pagerduty.escalation_policy:
+
+
+    escalation_policy: "example_escalation_policy"
+
+
+    state: present
+  # API: POST /escalation_policies
+
+
+
+- name: Update a escalation_policy
+  stevefulme1.pagerduty.escalation_policy:
+    id: "existing_id"
+
+
+
+    state: present
+  # API:  
+
+
+
+- name: Delete a escalation_policy
+  stevefulme1.pagerduty.escalation_policy:
+    id: "existing_id"
     state: absent
-    api_token: "{{ pagerduty_token }}"
-'''
+  # API: DELETE /teams/{id}/escalation_policies/{escalation_policy_id}
 
-RETURN = r'''
+"""
+
+RETURN = r"""
+
 escalation_policy:
-  description: The escalation policy object.
-  type: dict
+  description: >-
+    
   returned: success
-'''
+  type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
-def build_policy_data(module):
-    data = {
-        'name': module.params['name'],
-        'type': 'escalation_policy',
-        'num_loops': module.params.get('num_loops', 0),
-    }
-    if module.params.get('description') is not None:
-        data['description'] = module.params['description']
-    if module.params.get('on_call_handoff_notifications') is not None:
-        data['on_call_handoff_notifications'] = module.params['on_call_handoff_notifications']
-    if module.params.get('rules') is not None:
-        data['escalation_rules'] = module.params['rules']
-    return data
+def get_current_state(client, module):
+    """Retrieve the current state of the escalation_policy via GET."""
+
+    # No single-resource GET endpoint; fall back to list + filter
+    identifier = module.params.get("id")
+
+    search_key = "id"
+    search_value = identifier
+
+    if search_value is None:
+        return None
+    try:
+        items = client.get("/escalation_policies")
+        if isinstance(items, dict):
+            items = items.get("results", items.get("data", items.get("items", [])))
+        for item in items:
+            if str(item.get(search_key)) == str(search_value):
+                return item
+            if str(item.get("id")) == str(search_value):
+                return item
+        return None
+    except ClientError:
+        return None
+
+
+
+def needs_update(current, desired):
+    """Compare current state against desired params and return True if an update is needed."""
+    if current is None:
+        return True
+    for key, value in desired.items():
+        if value is None:
+            continue
+        current_value = current.get(key)
+        if current_value != value:
+            return True
+    return False
+
+
+def build_payload(module):
+    """Build the API request payload from module params."""
+    payload = {}
+
+    if module.params.get("escalation_policy") is not None:
+        payload["escalation_policy"] = module.params["escalation_policy"]
+
+    return payload
 
 
 def main():
-    argument_spec = dict(
-        name=dict(type='str', required=True),
-        description=dict(type='str'),
-        num_loops=dict(type='int', default=0),
-        on_call_handoff_notifications=dict(type='str', choices=['if_has_services', 'always']),
-        rules=dict(type='list', elements='dict'),
-        state=dict(type='str', choices=['present', 'absent'], default='present'),
-    )
-    argument_spec.update(PAGERDUTY_COMMON_ARGS)
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            state=dict(type="str", choices=["present", "absent"], default="present"),
 
-    module = AnsibleModule(argument_spec=argument_spec, supports_check_mode=True)
-    pd = PagerDutyModule(module)
+            escalation_policy=dict(
+                type="dict",
+
+                required=True,
+
+
+
+
+
+            ),
+
+        )
+    )
+
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+
+    )
+
+    state = module.params["state"]
+    result = dict(changed=False, diff=dict(before={}, after={}))
 
     try:
-        if module.params['state'] == 'present':
-            pd.ensure_present(
-                resource_key='escalation_policy',
-                find_path='/escalation_policies',
-                find_key='escalation_policies',
-                create_path='/escalation_policies',
-                create_data=build_policy_data(module),
-                update_path_tmpl='/escalation_policies/{id}',
-                update_data_fn=lambda: build_policy_data(module),
-                compare_keys=['name', 'description', 'num_loops', 'on_call_handoff_notifications',
-                              'escalation_rules'],
-            )
-        else:
-            pd.ensure_absent(
-                resource_key='escalation_policy',
-                find_path='/escalation_policies',
-                find_key='escalation_policies',
-                delete_path_tmpl='/escalation_policies/{id}',
-            )
-        pd.exit()
-    except PagerDutyError as e:
-        pd.fail(str(e))
+        client = Client(module)
+        current = get_current_state(client, module)
+
+        if state == "present":
+            desired = build_payload(module)
+
+            if current is None:
+                # Resource does not exist — create it
+                result["changed"] = True
+                result["diff"]["before"] = {}
+                result["diff"]["after"] = desired
+
+                if not module.check_mode:
+
+                    response = client.POST(
+                        "/escalation_policies",
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
 
 
-if __name__ == '__main__':
+            elif needs_update(current, desired):
+                # Resource exists but needs updating
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = dict(current, **{k: v for k, v in desired.items() if v is not None})
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "".replace(
+                        "{id}", str(identifier)
+                    )
+                    response = client.put(
+                        path,
+                        data=desired,
+                    )
+                    result.update(response if isinstance(response, dict) else {})
+
+
+            else:
+                # Resource exists and is up-to-date
+
+                result["escalation_policy"] = current.get("escalation_policy")
+
+
+        elif state == "absent":
+            if current is not None:
+                result["changed"] = True
+                result["diff"]["before"] = current
+                result["diff"]["after"] = {}
+
+                if not module.check_mode:
+
+                    identifier = current.get("id")
+                    path = "/teams/{id}/escalation_policies/{escalation_policy_id}".replace(
+                        "{id}", str(identifier)
+                    )
+                    client.delete(path)
+
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
+
+
+if __name__ == "__main__":
     main()

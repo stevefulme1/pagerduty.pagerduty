@@ -1,111 +1,178 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
+# Copyright: (c) 2024, Auto-generated
 # GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
+
 from __future__ import absolute_import, division, print_function
+
 __metaclass__ = type
 
-DOCUMENTATION = r'''
+DOCUMENTATION = r"""
 ---
 module: team_info
-short_description: List or get PagerDuty teams
-description:
-  - Retrieve a single team by ID or name, or list all teams.
+short_description: Retrieve information about team resources
 version_added: "1.0.0"
-author: "PagerDuty (@PagerDuty)"
+description:
+  - Retrieve a single team by its identifier, or list all team resources.
+  - This module always reports C(changed=False).
+author:
+  - "Auto-generated"
 options:
   id:
-    description: The ID of a specific team to retrieve.
+    description:
+      - The unique identifier of the team to retrieve.
+      - When omitted, all team resources are listed.
     type: str
-  name:
-    description: Filter teams by exact name match.
-    type: str
+    required: false
 
-  limit:
+
+
+
+  page:
     description:
-      - Maximum number of results to return per request.
-      - PagerDuty API default is 25, max is 100.
+      - Page number for paginated results.
+      - Only applies when listing resources.
     type: int
-    default: 100
-  offset:
+    required: false
+  page_size:
     description:
-      - Pagination offset (number of records to skip).
-      - Used for manual pagination through large result sets.
+      - Number of results per page.
+      - Only applies when listing resources.
     type: int
-    default: 0
-  max_results:
-    description:
-      - Maximum total number of results to return across all pages.
-      - Set to 0 for no limit.
-    type: int
-    default: 1000
+    required: false
 extends_documentation_fragment:
-  - pagerduty.pagerduty.pagerduty
-'''
+  - stevefulme1.pagerduty.auth
+"""
 
-EXAMPLES = r'''
+EXAMPLES = r"""
 - name: Get a specific team
-  pagerduty.pagerduty.team_info:
-    id: PTEAM01
+  stevefulme1.pagerduty.team_info:
+    id: "example_id"
   register: result
 
-- name: Find a team by name
-  pagerduty.pagerduty.team_info:
-    name: Platform Engineering
+- name: List all team resources
+  stevefulme1.pagerduty.team_info:
   register: result
 
-- name: List all teams
-  pagerduty.pagerduty.team_info:
-  register: result
-'''
 
-RETURN = r'''
+
+- name: List team resources with pagination
+  stevefulme1.pagerduty.team_info:
+    page: 1
+    page_size: 50
+  register: result
+"""
+
+RETURN = r"""
 teams:
-  description: List of teams matching the query.
-  type: list
+  description: List of team resources matching the query.
   returned: always
-'''
+  type: list
+  elements: dict
+  contains:
+
+    team:
+      description: >-
+        
+      type: dict
+
+
+"""
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty import (
-    PAGERDUTY_COMMON_ARGS, PagerDutyClient, PagerDutyError,
+from ansible_collections.stevefulme1.pagerduty.plugins.module_utils.api_client import (
+    Client,
+    ClientError,
+    argument_spec as auth_argument_spec,
 )
 
 
+def fetch_single(client, identifier):
+    """Retrieve a single team by identifier."""
+
+    # No single-resource GET endpoint; filter from list
+    items = client.get("/teams")
+    if isinstance(items, dict):
+        items = items.get("results", items.get("data", items.get("items", [])))
+    for item in items:
+        if str(item.get("id")) == str(identifier):
+            return item
+    return None
+
+
+
+def fetch_list(client, module):
+    """List team resources with optional filtering and pagination."""
+
+    params = {}
+
+
+
+
+
+
+
+    page = module.params.get("page")
+    page_size = module.params.get("page_size")
+
+    if page is not None or page_size is not None:
+        if page is not None:
+            params["page"] = page
+        if page_size is not None:
+            params["page_size"] = page_size
+        response = client.get("/teams", params=params)
+        if isinstance(response, dict):
+            return response.get("results", response.get("data", response.get("items", [])))
+        return response if isinstance(response, list) else []
+    else:
+        return client.get_paginated("/teams", params=params)
+
+
+
 def main():
-    module = AnsibleModule(
-        argument_spec=dict(
-            id=dict(type='str'),
-            name=dict(type='str'),
-            limit=dict(type='int', default=100),
-            offset=dict(type='int', default=0),
-            max_results=dict(type='int', default=1000),
-            **PAGERDUTY_COMMON_ARGS
-        ),
-        supports_check_mode=True,
+    spec = auth_argument_spec()
+    spec.update(
+        dict(
+            id=dict(type="str", required=False),
+
+
+
+
+            page=dict(type="int", required=False),
+            page_size=dict(type="int", required=False),
+        )
     )
 
-    client = PagerDutyClient(module)
-    params = module.params
+    module = AnsibleModule(
+        argument_spec=spec,
+        supports_check_mode=True,
+        mutually_exclusive=[
+            ("id", "page"),
+            ("id", "page_size"),
+        ],
+    )
+
+    result = dict(
+        changed=False,
+        teams=[],
+    )
 
     try:
-        if params['id']:
-            team = client.get('/teams/{0}'.format(params['id']))
-            module.exit_json(changed=False, teams=[team.get('team', team)])
+        client = Client(module)
+        identifier = module.params.get("id")
+
+        if identifier is not None:
+            item = fetch_single(client, identifier)
+            result["teams"] = [item] if item else []
         else:
-            qp = {}
-            if params['name']:
-                qp['query'] = params['name']
-            if params.get('limit'):
-                qp['limit'] = params['limit']
-            if params.get('offset'):
-                qp['offset'] = params['offset']
-            teams = client.list_all('/teams', 'teams', params=qp or None)
-            if params['name']:
-                teams = [t for t in teams if t.get('name') == params['name']]
-            module.exit_json(changed=False, teams=teams)
-    except PagerDutyError as e:
-        module.fail_json(msg=str(e))
+            result["teams"] = fetch_list(client, module)
+
+    except ClientError as e:
+        module.fail_json(msg=str(e), **result)
+
+    module.exit_json(**result)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
