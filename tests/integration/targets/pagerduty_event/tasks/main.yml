@@ -51,4 +51,4 @@
         routing_key: "{{ test_routing_key }}"
         event_action: resolve
         dedup_key: "{{ test_dedup_key }}"
-      ignore_errors: true
+      failed_when: false

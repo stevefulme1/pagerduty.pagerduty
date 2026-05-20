@@ -78,14 +78,10 @@ jobs:
 
       - name: Run sanity tests
         working-directory: ansible_collections/${{ env.NAMESPACE }}/${{ env.COLLECTION }}
-        continue-on-error: true
         run: >-
           ansible-test sanity
           --python ${{ matrix.python }}
           --color yes
-          --skip-test validate-modules
-          --skip-test pep8
-          --skip-test ansible-doc
           --exclude extensions/
           -v
 
@@ -151,7 +147,6 @@ jobs:
           --color yes
           -v
           --allow-unsupported
-        continue-on-error: true
 
   integration-cloud:
     name: Integration (PagerDuty API)

@@ -36,4 +36,4 @@
         api_token: "{{ pagerduty_api_token }}"
         label: "{{ test_tag_label }}"
         state: absent
-      ignore_errors: true
+      failed_when: false

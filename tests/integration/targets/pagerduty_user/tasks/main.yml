@@ -70,4 +70,4 @@
         name: "{{ test_user_name }}"
         email: "{{ test_user_email }}"
         state: absent
-      ignore_errors: true
+      failed_when: false

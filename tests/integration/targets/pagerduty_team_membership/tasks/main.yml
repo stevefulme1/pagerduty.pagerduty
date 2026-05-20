@@ -68,7 +68,7 @@
         team: "{{ test_team_name }}"
         user: "{{ test_user_email }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Cleanup user
       pagerduty.pagerduty.user:
@@ -76,11 +76,11 @@
         name: "{{ test_user_name }}"
         email: "{{ test_user_email }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Cleanup team
       pagerduty.pagerduty.team:
         api_token: "{{ pagerduty_api_token }}"
         name: "{{ test_team_name }}"
         state: absent
-      ignore_errors: true
+      failed_when: false

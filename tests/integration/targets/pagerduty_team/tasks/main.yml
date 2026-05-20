@@ -50,4 +50,4 @@
         api_token: "{{ pagerduty_api_token }}"
         name: "{{ test_team_name }}"
         state: absent
-      ignore_errors: true
+      failed_when: false

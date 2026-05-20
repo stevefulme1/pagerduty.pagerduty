@@ -57,7 +57,7 @@
         name: "{{ test_sched_name }}"
         time_zone: "UTC"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Cleanup user
       pagerduty.pagerduty.user:
@@ -65,4 +65,4 @@
         name: "{{ test_user_name }}"
         email: "{{ test_user_email }}"
         state: absent
-      ignore_errors: true
+      failed_when: false

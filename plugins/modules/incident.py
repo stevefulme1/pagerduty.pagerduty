@@ -12,6 +12,7 @@ short_description: Manage PagerDuty incidents
 description:
   - Create, update, and resolve PagerDuty incidents.
   - For updates, the C(id) parameter is required.
+  - Idempotent -- a second run with identical parameters returns changed=False.
 version_added: "1.0.0"
 author: "Ansible PagerDuty Collection Authors (@ansible-collections)"
 options:
@@ -86,18 +87,38 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.pagerduty impo
     PAGERDUTY_COMMON_ARGS, PagerDutyModule, PagerDutyError
 )
 
+COMPARE_KEYS = ('title', 'urgency', 'status')
+
 
 def resolve_ref(client, value, path, resource_key):
     """Resolve a name or ID to an API reference dict."""
     if not value:
         return None
-    # If it looks like an ID, use it directly
     if value.startswith('P') and len(value) >= 7:
         return {'id': value, 'type': resource_key + '_reference'}
     found = client.find_by_name(path, resource_key + 's', value)
     if not found:
         raise PagerDutyError('Could not find {0} named "{1}"'.format(resource_key, value))
     return {'id': found['id'], 'type': resource_key + '_reference'}
+
+
+def get_current_state(client, incident_id):
+    """GET the incident, return None if not found."""
+    if not incident_id:
+        return None
+    return client.find_by_id('/incidents/{0}'.format(incident_id), 'incident')
+
+
+def needs_update(current, desired):
+    """Compare current vs desired, return dict of changes."""
+    changes = {}
+    for key in COMPARE_KEYS:
+        if key in desired:
+            current_val = current.get(key)
+            desired_val = desired[key]
+            if current_val != desired_val:
+                changes[key] = desired_val
+    return changes
 
 
 def build_incident_data(client, params):
@@ -171,29 +192,40 @@ def main():
         if state == 'absent':
             if not incident_id:
                 pd.fail('id is required to resolve/remove an incident')
-            existing = pd.client.find_by_id('/incidents/{0}'.format(incident_id), 'incident')
-            if existing and existing.get('status') != 'resolved':
-                if not pd.check_mode:
-                    pd.client.put('/incidents/{0}'.format(incident_id),
-                                  {'incident': {'type': 'incident', 'status': 'resolved'}})
+            existing = get_current_state(pd.client, incident_id)
+            if not existing or existing.get('status') == 'resolved':
+                pd.exit()
+            if pd.check_mode:
                 pd.result['changed'] = True
+                pd.exit()
+            pd.client.put('/incidents/{0}'.format(incident_id),
+                          {'incident': {'type': 'incident', 'status': 'resolved'}})
+            pd.result['changed'] = True
         else:
             data = build_incident_data(pd.client, module.params)
             if incident_id:
-                existing = pd.client.find_by_id('/incidents/{0}'.format(incident_id), 'incident')
-                if existing:
-                    if not pd.check_mode:
-                        result = pd.client.put('/incidents/{0}'.format(incident_id), {'incident': data})
-                        pd.result['incident'] = result.get('incident', result)
-                    pd.result['changed'] = True
-                else:
+                existing = get_current_state(pd.client, incident_id)
+                if not existing:
                     pd.fail('Incident {0} not found'.format(incident_id))
+                changes = needs_update(existing, data)
+                if not changes:
+                    pd.result['incident'] = existing
+                    pd.exit()
+                if pd.check_mode:
+                    pd.result['changed'] = True
+                    pd.result['incident'] = existing
+                    pd.exit()
+                result = pd.client.put('/incidents/{0}'.format(incident_id), {'incident': data})
+                pd.result['incident'] = result.get('incident', result)
+                pd.result['changed'] = True
             else:
                 if not module.params.get('service'):
                     pd.fail('service is required when creating an incident')
-                if not pd.check_mode:
-                    result = pd.client.post('/incidents', {'incident': data})
-                    pd.result['incident'] = result.get('incident', result)
+                if pd.check_mode:
+                    pd.result['changed'] = True
+                    pd.exit()
+                result = pd.client.post('/incidents', {'incident': data})
+                pd.result['incident'] = result.get('incident', result)
                 pd.result['changed'] = True
 
         pd.exit()

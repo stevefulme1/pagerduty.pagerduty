@@ -60,7 +60,7 @@
         id: "{{ create_result.incident.id | default('') }}"
         status: resolved
         state: present
-      ignore_errors: true
+      failed_when: false
       when: create_result.incident.id is defined
 
     - name: Cleanup service
@@ -69,11 +69,11 @@
         name: "{{ test_svc_name }}"
         escalation_policy: "{{ test_ep_name }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
 
     - name: Cleanup escalation policy
       pagerduty.pagerduty.escalation_policy:
         api_token: "{{ pagerduty_api_token }}"
         name: "{{ test_ep_name }}"
         state: absent
-      ignore_errors: true
+      failed_when: false
