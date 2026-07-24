@@ -199,7 +199,6 @@ def main():
 
                 result["escalation_policy"] = current.get("escalation_policy")
 
-
         elif state == "absent":
             if current is not None:
                 result["changed"] = True
@@ -213,7 +212,6 @@ def main():
                         "{id}", str(identifier)
                     )
                     client.delete(path)
-
 
     except ClientError as e:
         module.fail_json(msg=str(e), **result)

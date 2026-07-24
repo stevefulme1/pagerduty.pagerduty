@@ -207,7 +207,6 @@ def main():
 
                 result["incident"] = current.get("incident")
 
-
         elif state == "absent":
             if current is not None:
                 result["changed"] = True
@@ -223,7 +222,6 @@ def main():
                         data={"incident": {"type": "incident_reference", "status": "resolved"}},
                     )
                     result.update(response if isinstance(response, dict) else {})
-
 
     except ClientError as e:
         module.fail_json(msg=str(e), **result)

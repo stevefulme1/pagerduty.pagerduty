@@ -100,7 +100,6 @@ def fetch_list(client, module):
 
     params = {}
 
-
     page = module.params.get("page")
     page_size = module.params.get("page_size")
 

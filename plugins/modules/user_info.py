@@ -102,7 +102,6 @@ def fetch_list(client, module):
 
     params = {}
 
-
     page = module.params.get("page")
     page_size = module.params.get("page_size")
 
@@ -124,7 +123,6 @@ def main():
     spec.update(
         dict(
             id=dict(type="str", required=False),
-
 
             page=dict(type="int", required=False),
             page_size=dict(type="int", required=False),

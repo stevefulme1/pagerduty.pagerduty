@@ -10,7 +10,7 @@ name: CI
   workflow_dispatch:
 
 env:
-  NAMESPACE: stevefulme1
+  NAMESPACE: pagerduty
   COLLECTION: pagerduty
 
 jobs:
@@ -138,7 +138,5 @@ jobs:
         run: ansible-test integration --docker --python 3.12 -v
         env:
 
-          STEVEFULME1_PAGERDUTY_API_KEY: ${{ secrets.API_KEY }}
-
-
-          STEVEFULME1_PAGERDUTY_API_URL: ${{ secrets.API_URL }}
+          PAGERDUTY_API_KEY: ${{ secrets.API_KEY }}
+          PAGERDUTY_API_URL: ${{ secrets.API_URL }}

@@ -15,8 +15,8 @@ _fake_root = os.path.join(COLLECTION_ROOT, '.test_namespace')
 _ns_path = os.path.join(_fake_root, 'ansible_collections', 'pagerduty', 'pagerduty')
 
 if not os.path.islink(_ns_path):
-    os.makedirs(os.path.join(_fake_root, 'ansible_collections', 'pagerduty'), exist_ok=True)
     try:
+        os.makedirs(os.path.join(_fake_root, 'ansible_collections', 'pagerduty'), exist_ok=True)
         os.symlink(COLLECTION_ROOT, _ns_path)
     except OSError:
         pass

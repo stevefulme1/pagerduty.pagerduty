@@ -69,11 +69,7 @@ class Client:
             "Accept": "application/json",
         }
 
-
-
         headers["Authorization"] = "Token token={0}".format(self.module.params["api_key"])
-
-
 
         return headers
 

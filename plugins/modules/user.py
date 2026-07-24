@@ -156,15 +156,12 @@ def main():
 
                 required=True,
 
-
             ),
 
             role=dict(
                 type="str",
 
-
                 choices=['observer', 'responder', 'manager'],
-
 
             ),
 
@@ -201,7 +198,6 @@ def main():
                     )
                     result.update(response if isinstance(response, dict) else {})
 
-
             elif needs_update(current, desired):
                 # Resource exists but needs updating
                 result["changed"] = True
@@ -220,12 +216,10 @@ def main():
                     )
                     result.update(response if isinstance(response, dict) else {})
 
-
             else:
                 # Resource exists and is up-to-date
 
                 result["user"] = current.get("user")
-
 
         elif state == "absent":
             if current is not None:
@@ -240,7 +234,6 @@ def main():
                         "{id}", str(identifier)
                     )
                     client.delete(path)
-
 
     except ClientError as e:
         module.fail_json(msg=str(e), **result)
