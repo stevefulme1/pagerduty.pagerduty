@@ -7,10 +7,12 @@
 - name: Set test variables
   ansible.builtin.set_fact:
     test_incident_params:
-
-      incident: "{{ test_incident | default('test_incident_value') }}"
-
-      incidents: "{{ test_incidents | default('test_incidents_value') }}"
+      incident:
+        type: incident
+        title: "Test Incident - Integration"
+        service:
+          id: "{{ test_service_id | default('PXXXXXX') }}"
+          type: service_reference
 
 # ============================================================
 # CREATE - check mode
@@ -18,7 +20,6 @@
 - name: Create incident (check mode)
   pagerduty.pagerduty.incident:
     incident: "{{ test_incident_params.incident }}"
-    incidents: "{{ test_incident_params.incidents }}"
     state: present
   check_mode: true
   register: create_check
@@ -46,7 +47,6 @@
 - name: Create incident
   pagerduty.pagerduty.incident:
     incident: "{{ test_incident_params.incident }}"
-    incidents: "{{ test_incident_params.incidents }}"
     state: present
   register: create_result
 
@@ -66,7 +66,6 @@
 - name: Create incident again (idempotency)
   pagerduty.pagerduty.incident:
     incident: "{{ test_incident_params.incident }}"
-    incidents: "{{ test_incident_params.incidents }}"
     state: present
   register: create_idempotent
 
@@ -89,10 +88,7 @@
     that:
       - info_result.incidents | length == 1
 
-      - info_result.incidents[0].incident == test_incident_params.incident
-
-      - info_result.incidents[0].incidents == test_incident_params.incidents
-
+      - info_result.incidents[0].title == test_incident_params.incident.title
     fail_msg: "Created resource does not match expected values"
 
 # ============================================================
@@ -108,8 +104,6 @@
 - name: Delete incident (check mode)
   pagerduty.pagerduty.incident:
     id: "{{ created_id }}"
-    incident: {}
-    incidents: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -137,8 +131,6 @@
 - name: Delete incident
   pagerduty.pagerduty.incident:
     id: "{{ created_id }}"
-    incident: {}
-    incidents: {}
     state: absent
   register: delete_result
 
@@ -154,8 +146,6 @@
 - name: Delete incident again (idempotency)
   pagerduty.pagerduty.incident:
     id: "{{ created_id }}"
-    incident: {}
-    incidents: {}
     state: absent
   register: delete_idempotent
 
