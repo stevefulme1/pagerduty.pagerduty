@@ -80,20 +80,35 @@ class TestGetCurrentState:
         result = get_current_state(mock_client, mock_module)
         assert result is None
 
-    def test_handles_client_error(self, resource_args):
-        """get_current_state returns None on API error."""
+    def test_returns_none_on_404(self, resource_args):
+        """get_current_state returns None when resource is not found (404)."""
         resource_args["id"] = "res-123"
         from ansible_collections.pagerduty.pagerduty.plugins.modules.service import get_current_state
         from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client import ClientError
 
         mock_client = MagicMock()
-        mock_client.get.side_effect = ClientError("API error")
+        mock_client.get.side_effect = ClientError("Not found", status_code=404)
 
         mock_module = MagicMock()
         mock_module.params = resource_args
 
         result = get_current_state(mock_client, mock_module)
         assert result is None
+
+    def test_raises_on_non_404_error(self, resource_args):
+        """get_current_state re-raises non-404 ClientError."""
+        resource_args["id"] = "res-123"
+        from ansible_collections.pagerduty.pagerduty.plugins.modules.service import get_current_state
+        from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client import ClientError
+
+        mock_client = MagicMock()
+        mock_client.get.side_effect = ClientError("Server error", status_code=500)
+
+        mock_module = MagicMock()
+        mock_module.params = resource_args
+
+        with pytest.raises(ClientError):
+            get_current_state(mock_client, mock_module)
 
 
 class TestNeedsUpdate:
