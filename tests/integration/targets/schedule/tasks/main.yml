@@ -19,7 +19,7 @@
 # ============================================================
 - name: Create schedule (check mode)
   pagerduty.pagerduty.schedule:
-
+    schedule: "{{ test_schedule_params.schedule }}"
     state: present
   check_mode: true
   register: create_check
@@ -48,7 +48,7 @@
 # ============================================================
 - name: Create schedule
   pagerduty.pagerduty.schedule:
-
+    schedule: "{{ test_schedule_params.schedule }}"
     state: present
   register: create_result
 
@@ -67,7 +67,7 @@
 # ============================================================
 - name: Create schedule again (idempotency)
   pagerduty.pagerduty.schedule:
-
+    schedule: "{{ test_schedule_params.schedule }}"
     state: present
   register: create_idempotent
 
@@ -114,6 +114,7 @@
 - name: Delete schedule (check mode)
   pagerduty.pagerduty.schedule:
     id: "{{ created_id }}"
+    schedule: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -141,6 +142,7 @@
 - name: Delete schedule
   pagerduty.pagerduty.schedule:
     id: "{{ created_id }}"
+    schedule: {}
     state: absent
   register: delete_result
 
@@ -156,6 +158,7 @@
 - name: Delete schedule again (idempotency)
   pagerduty.pagerduty.schedule:
     id: "{{ created_id }}"
+    schedule: {}
     state: absent
   register: delete_idempotent
 

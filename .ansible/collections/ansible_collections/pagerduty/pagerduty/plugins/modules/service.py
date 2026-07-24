@@ -29,57 +29,45 @@ options:
   service:
     description:
       - >-
-        
+
     type: dict
 
     required: true
 
-
-
-
+  id:
+    description:
+      - The unique identifier of the resource.
+      - Required when updating or deleting an existing resource.
+    type: str
+    required: false
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-
 - name: Create a service
   pagerduty.pagerduty.service:
-
-
     service: "example_service"
-
-
     state: present
-  # API: POST /services
-
-
-
+# API: POST /services
 - name: Update a service
   pagerduty.pagerduty.service:
     id: "existing_id"
-
-
-
     state: present
-  # API:  
-
-
-
+# API:
 - name: Delete a service
   pagerduty.pagerduty.service:
     id: "existing_id"
     state: absent
-  # API: DELETE /services/{id}
-
+# API: DELETE /services/{id}
 """
 
 RETURN = r"""
 
 service:
   description: >-
-    
+
   returned: success
   type: dict
 
@@ -119,7 +107,6 @@ def get_current_state(client, module):
         return None
 
 
-
 def needs_update(current, desired):
     """Compare current state against desired params and return True if an update is needed."""
     if current is None:
@@ -149,13 +136,11 @@ def main():
         dict(
             state=dict(type="str", choices=["present", "absent"], default="present"),
 
+            id=dict(type="str", required=False),
             service=dict(
                 type="dict",
 
                 required=True,
-
-
-
 
 
             ),

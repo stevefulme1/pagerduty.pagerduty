@@ -26,9 +26,6 @@ options:
     type: str
     required: false
 
-
-
-
   page:
     description:
       - Page number for paginated results.
@@ -55,8 +52,6 @@ EXAMPLES = r"""
   pagerduty.pagerduty.escalation_policy_info:
   register: result
 
-
-
 - name: List escalation_policy resources with pagination
   pagerduty.pagerduty.escalation_policy_info:
     page: 1
@@ -74,9 +69,8 @@ escalation_policys:
 
     escalation_policy:
       description: >-
-        
-      type: dict
 
+      type: dict
 
 """
 
@@ -101,16 +95,10 @@ def fetch_single(client, identifier):
     return None
 
 
-
 def fetch_list(client, module):
     """List escalation_policy resources with optional filtering and pagination."""
 
     params = {}
-
-
-
-
-
 
 
     page = module.params.get("page")
@@ -129,15 +117,11 @@ def fetch_list(client, module):
         return client.get_paginated("/escalation_policies", params=params)
 
 
-
 def main():
     spec = auth_argument_spec()
     spec.update(
         dict(
             id=dict(type="str", required=False),
-
-
-
 
             page=dict(type="int", required=False),
             page_size=dict(type="int", required=False),

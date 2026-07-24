@@ -19,7 +19,7 @@
 # ============================================================
 - name: Create service (check mode)
   pagerduty.pagerduty.service:
-
+    service: "{{ test_service_params.service }}"
     state: present
   check_mode: true
   register: create_check
@@ -48,7 +48,7 @@
 # ============================================================
 - name: Create service
   pagerduty.pagerduty.service:
-
+    service: "{{ test_service_params.service }}"
     state: present
   register: create_result
 
@@ -67,7 +67,7 @@
 # ============================================================
 - name: Create service again (idempotency)
   pagerduty.pagerduty.service:
-
+    service: "{{ test_service_params.service }}"
     state: present
   register: create_idempotent
 
@@ -114,6 +114,7 @@
 - name: Delete service (check mode)
   pagerduty.pagerduty.service:
     id: "{{ created_id }}"
+    service: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -141,6 +142,7 @@
 - name: Delete service
   pagerduty.pagerduty.service:
     id: "{{ created_id }}"
+    service: {}
     state: absent
   register: delete_result
 
@@ -156,6 +158,7 @@
 - name: Delete service again (idempotency)
   pagerduty.pagerduty.service:
     id: "{{ created_id }}"
+    service: {}
     state: absent
   register: delete_idempotent
 

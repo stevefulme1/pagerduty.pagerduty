@@ -19,7 +19,7 @@
 # ============================================================
 - name: Create maintenance_window (check mode)
   pagerduty.pagerduty.maintenance_window:
-
+    maintenance_window: "{{ test_maintenance_window_params.maintenance_window }}"
     state: present
   check_mode: true
   register: create_check
@@ -48,7 +48,7 @@
 # ============================================================
 - name: Create maintenance_window
   pagerduty.pagerduty.maintenance_window:
-
+    maintenance_window: "{{ test_maintenance_window_params.maintenance_window }}"
     state: present
   register: create_result
 
@@ -67,7 +67,7 @@
 # ============================================================
 - name: Create maintenance_window again (idempotency)
   pagerduty.pagerduty.maintenance_window:
-
+    maintenance_window: "{{ test_maintenance_window_params.maintenance_window }}"
     state: present
   register: create_idempotent
 
@@ -114,6 +114,7 @@
 - name: Delete maintenance_window (check mode)
   pagerduty.pagerduty.maintenance_window:
     id: "{{ created_id }}"
+    maintenance_window: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -141,6 +142,7 @@
 - name: Delete maintenance_window
   pagerduty.pagerduty.maintenance_window:
     id: "{{ created_id }}"
+    maintenance_window: {}
     state: absent
   register: delete_result
 
@@ -156,6 +158,7 @@
 - name: Delete maintenance_window again (idempotency)
   pagerduty.pagerduty.maintenance_window:
     id: "{{ created_id }}"
+    maintenance_window: {}
     state: absent
   register: delete_idempotent
 

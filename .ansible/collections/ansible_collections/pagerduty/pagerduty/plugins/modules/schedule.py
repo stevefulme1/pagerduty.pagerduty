@@ -29,57 +29,45 @@ options:
   schedule:
     description:
       - >-
-        
+
     type: dict
 
     required: true
 
-
-
-
+  id:
+    description:
+      - The unique identifier of the resource.
+      - Required when updating or deleting an existing resource.
+    type: str
+    required: false
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-
 - name: Create a schedule
   pagerduty.pagerduty.schedule:
-
-
     schedule: "example_schedule"
-
-
     state: present
-  # API: POST /schedules
-
-
-
+# API: POST /schedules
 - name: Update a schedule
   pagerduty.pagerduty.schedule:
     id: "existing_id"
-
-
-
     state: present
-  # API:  
-
-
-
+# API:
 - name: Delete a schedule
   pagerduty.pagerduty.schedule:
     id: "existing_id"
     state: absent
-  # API: DELETE /schedules/{id}
-
+# API: DELETE /schedules/{id}
 """
 
 RETURN = r"""
 
 schedule:
   description: >-
-    
+
   returned: success
   type: dict
 
@@ -119,7 +107,6 @@ def get_current_state(client, module):
         return None
 
 
-
 def needs_update(current, desired):
     """Compare current state against desired params and return True if an update is needed."""
     if current is None:
@@ -149,13 +136,11 @@ def main():
         dict(
             state=dict(type="str", choices=["present", "absent"], default="present"),
 
+            id=dict(type="str", required=False),
             schedule=dict(
                 type="dict",
 
                 required=True,
-
-
-
 
 
             ),

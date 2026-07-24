@@ -19,7 +19,7 @@
 # ============================================================
 - name: Create escalation_policy (check mode)
   pagerduty.pagerduty.escalation_policy:
-
+    escalation_policy: "{{ test_escalation_policy_params.escalation_policy }}"
     state: present
   check_mode: true
   register: create_check
@@ -48,7 +48,7 @@
 # ============================================================
 - name: Create escalation_policy
   pagerduty.pagerduty.escalation_policy:
-
+    escalation_policy: "{{ test_escalation_policy_params.escalation_policy }}"
     state: present
   register: create_result
 
@@ -67,7 +67,7 @@
 # ============================================================
 - name: Create escalation_policy again (idempotency)
   pagerduty.pagerduty.escalation_policy:
-
+    escalation_policy: "{{ test_escalation_policy_params.escalation_policy }}"
     state: present
   register: create_idempotent
 
@@ -114,6 +114,7 @@
 - name: Delete escalation_policy (check mode)
   pagerduty.pagerduty.escalation_policy:
     id: "{{ created_id }}"
+    escalation_policy: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -141,6 +142,7 @@
 - name: Delete escalation_policy
   pagerduty.pagerduty.escalation_policy:
     id: "{{ created_id }}"
+    escalation_policy: {}
     state: absent
   register: delete_result
 
@@ -156,6 +158,7 @@
 - name: Delete escalation_policy again (idempotency)
   pagerduty.pagerduty.escalation_policy:
     id: "{{ created_id }}"
+    escalation_policy: {}
     state: absent
   register: delete_idempotent
 

@@ -29,13 +29,10 @@ options:
   user:
     description:
       - >-
-        
+
     type: dict
 
     required: true
-
-
-
 
 
   role:
@@ -47,57 +44,41 @@ options:
 
     choices: ["observer", "responder", "manager"]
 
-
-
+  id:
+    description:
+      - The unique identifier of the resource.
+      - Required when updating or deleting an existing resource.
+    type: str
+    required: false
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-
 - name: Create a user
   pagerduty.pagerduty.user:
-
-
     user: "example_user"
-
-
-
-
     state: present
-  # API: POST /users
-
-
-
+# API: POST /users
 - name: Update a user
   pagerduty.pagerduty.user:
     id: "existing_id"
-
-
-
-
     role: "updated_role"
-
-
     state: present
-  # API:  
-
-
-
+# API:
 - name: Delete a user
   pagerduty.pagerduty.user:
     id: "existing_id"
     state: absent
-  # API: DELETE /users/{id}
-
+# API: DELETE /users/{id}
 """
 
 RETURN = r"""
 
 user:
   description: >-
-    
+
   returned: success
   type: dict
 
@@ -137,7 +118,6 @@ def get_current_state(client, module):
         return None
 
 
-
 def needs_update(current, desired):
     """Compare current state against desired params and return True if an update is needed."""
     if current is None:
@@ -170,13 +150,11 @@ def main():
         dict(
             state=dict(type="str", choices=["present", "absent"], default="present"),
 
+            id=dict(type="str", required=False),
             user=dict(
                 type="dict",
 
                 required=True,
-
-
-
 
 
             ),
@@ -186,8 +164,6 @@ def main():
 
 
                 choices=['observer', 'responder', 'manager'],
-
-
 
 
             ),

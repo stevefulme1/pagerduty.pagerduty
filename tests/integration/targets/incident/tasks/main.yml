@@ -23,7 +23,8 @@
 # ============================================================
 - name: Create incident (check mode)
   pagerduty.pagerduty.incident:
-
+    incident: "{{ test_incident_params.incident }}"
+    incidents: "{{ test_incident_params.incidents }}"
     state: present
   check_mode: true
   register: create_check
@@ -54,7 +55,8 @@
 # ============================================================
 - name: Create incident
   pagerduty.pagerduty.incident:
-
+    incident: "{{ test_incident_params.incident }}"
+    incidents: "{{ test_incident_params.incidents }}"
     state: present
   register: create_result
 
@@ -73,7 +75,8 @@
 # ============================================================
 - name: Create incident again (idempotency)
   pagerduty.pagerduty.incident:
-
+    incident: "{{ test_incident_params.incident }}"
+    incidents: "{{ test_incident_params.incidents }}"
     state: present
   register: create_idempotent
 
@@ -126,6 +129,8 @@
 - name: Delete incident (check mode)
   pagerduty.pagerduty.incident:
     id: "{{ created_id }}"
+    incident: {}
+    incidents: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -153,6 +158,8 @@
 - name: Delete incident
   pagerduty.pagerduty.incident:
     id: "{{ created_id }}"
+    incident: {}
+    incidents: {}
     state: absent
   register: delete_result
 
@@ -168,6 +175,8 @@
 - name: Delete incident again (idempotency)
   pagerduty.pagerduty.incident:
     id: "{{ created_id }}"
+    incident: {}
+    incidents: {}
     state: absent
   register: delete_idempotent
 

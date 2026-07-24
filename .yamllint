@@ -17,5 +17,11 @@ rules:
   indentation:
     spaces: 2
     indent-sequences: true
+  comments-indentation: false
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
   empty-lines:
     max: 2

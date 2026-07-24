@@ -21,7 +21,7 @@
 # ============================================================
 - name: Create user (check mode)
   pagerduty.pagerduty.user:
-
+    user: "{{ test_user_params.user }}"
     state: present
   check_mode: true
   register: create_check
@@ -52,7 +52,7 @@
 # ============================================================
 - name: Create user
   pagerduty.pagerduty.user:
-
+    user: "{{ test_user_params.user }}"
     state: present
   register: create_result
 
@@ -71,7 +71,7 @@
 # ============================================================
 - name: Create user again (idempotency)
   pagerduty.pagerduty.user:
-
+    user: "{{ test_user_params.user }}"
     state: present
   register: create_idempotent
 
@@ -117,9 +117,8 @@
 - name: Update user
   pagerduty.pagerduty.user:
     id: "{{ created_id }}"
-
+    user: "{{ test_user_params.user }}"
     role: "updated_role_value"
-
     state: present
   register: update_result
 
@@ -135,9 +134,8 @@
 - name: Update user again (idempotency)
   pagerduty.pagerduty.user:
     id: "{{ created_id }}"
-
+    user: "{{ test_user_params.user }}"
     role: "updated_role_value"
-
     state: present
   register: update_idempotent
 
@@ -154,6 +152,7 @@
 - name: Delete user (check mode)
   pagerduty.pagerduty.user:
     id: "{{ created_id }}"
+    user: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -181,6 +180,7 @@
 - name: Delete user
   pagerduty.pagerduty.user:
     id: "{{ created_id }}"
+    user: {}
     state: absent
   register: delete_result
 
@@ -196,6 +196,7 @@
 - name: Delete user again (idempotency)
   pagerduty.pagerduty.user:
     id: "{{ created_id }}"
+    user: {}
     state: absent
   register: delete_idempotent
 

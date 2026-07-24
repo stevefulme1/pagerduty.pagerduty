@@ -17,9 +17,9 @@ options:
   api_key:
     description:
       - The PagerDuty REST API v2 token for authentication.
-      - Can also be set via the C(PAGERDUTY_API_KEY) environment variable.
+      - If not set, the value of the C(PAGERDUTY_API_KEY) environment variable is used.
     type: str
-    required: true
+    required: false
 
   api_url:
     description:

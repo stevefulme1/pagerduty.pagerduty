@@ -29,57 +29,45 @@ options:
   team:
     description:
       - >-
-        
+
     type: dict
 
     required: true
 
-
-
-
+  id:
+    description:
+      - The unique identifier of the resource.
+      - Required when updating or deleting an existing resource.
+    type: str
+    required: false
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-
 - name: Create a team
   pagerduty.pagerduty.team:
-
-
     team: "example_team"
-
-
     state: present
-  # API: POST /teams
-
-
-
+# API: POST /teams
 - name: Update a team
   pagerduty.pagerduty.team:
     id: "existing_id"
-
-
-
     state: present
-  # API:  
-
-
-
+# API:
 - name: Delete a team
   pagerduty.pagerduty.team:
     id: "existing_id"
     state: absent
-  # API: DELETE /teams/{id}
-
+# API: DELETE /teams/{id}
 """
 
 RETURN = r"""
 
 team:
   description: >-
-    
+
   returned: success
   type: dict
 
@@ -119,7 +107,6 @@ def get_current_state(client, module):
         return None
 
 
-
 def needs_update(current, desired):
     """Compare current state against desired params and return True if an update is needed."""
     if current is None:
@@ -149,13 +136,11 @@ def main():
         dict(
             state=dict(type="str", choices=["present", "absent"], default="present"),
 
+            id=dict(type="str", required=False),
             team=dict(
                 type="dict",
 
                 required=True,
-
-
-
 
 
             ),

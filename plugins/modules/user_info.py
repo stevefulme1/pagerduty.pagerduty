@@ -27,10 +27,6 @@ options:
     required: false
 
 
-
-
-
-
   page:
     description:
       - Page number for paginated results.
@@ -57,8 +53,6 @@ EXAMPLES = r"""
   pagerduty.pagerduty.user_info:
   register: result
 
-
-
 - name: List user resources with pagination
   pagerduty.pagerduty.user_info:
     page: 1
@@ -76,7 +70,7 @@ users:
 
     user:
       description: >-
-        
+
       type: dict
 
 
@@ -103,18 +97,10 @@ def fetch_single(client, identifier):
     return None
 
 
-
 def fetch_list(client, module):
     """List user resources with optional filtering and pagination."""
 
     params = {}
-
-
-
-
-
-
-
 
 
     page = module.params.get("page")
@@ -133,16 +119,11 @@ def fetch_list(client, module):
         return client.get_paginated("/users", params=params)
 
 
-
 def main():
     spec = auth_argument_spec()
     spec.update(
         dict(
             id=dict(type="str", required=False),
-
-
-
-
 
 
             page=dict(type="int", required=False),

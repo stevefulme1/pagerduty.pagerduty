@@ -27,8 +27,6 @@ options:
     required: false
 
 
-
-
   page:
     description:
       - Page number for paginated results.
@@ -56,7 +54,6 @@ EXAMPLES = r"""
   register: result
 
 
-
 - name: List team resources with pagination
   pagerduty.pagerduty.team_info:
     page: 1
@@ -74,7 +71,7 @@ teams:
 
     team:
       description: >-
-        
+
       type: dict
 
 
@@ -101,16 +98,10 @@ def fetch_single(client, identifier):
     return None
 
 
-
 def fetch_list(client, module):
     """List team resources with optional filtering and pagination."""
 
     params = {}
-
-
-
-
-
 
 
     page = module.params.get("page")
@@ -129,14 +120,11 @@ def fetch_list(client, module):
         return client.get_paginated("/teams", params=params)
 
 
-
 def main():
     spec = auth_argument_spec()
     spec.update(
         dict(
             id=dict(type="str", required=False),
-
-
 
 
             page=dict(type="int", required=False),

@@ -11,6 +11,7 @@ __metaclass__ = type
 import json
 import time
 
+from ansible.module_utils.basic import env_fallback
 from ansible.module_utils.urls import open_url
 from ansible.module_utils.six.moves.urllib.error import HTTPError, URLError
 from ansible.module_utils.six.moves.urllib.parse import urlencode
@@ -29,7 +30,12 @@ def argument_spec():
     """Return the shared authentication argument spec for all modules."""
     return dict(
 
-        api_key=dict(type="str", required=True, no_log=True),
+        api_key=dict(
+            type="str",
+            required=False,
+            no_log=True,
+            fallback=(env_fallback, ["PAGERDUTY_API_KEY"]),
+        ),
 
 
         api_url=dict(

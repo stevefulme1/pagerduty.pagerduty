@@ -11,6 +11,7 @@ license:
 tags:
   - pagerduty
   - api
+  - monitoring
 repository: https://github.com/stevefulme1/ansible-pagerduty
 build_ignore:
   - tests/output

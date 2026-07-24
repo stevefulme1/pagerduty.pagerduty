@@ -19,6 +19,13 @@ description:
 author:
   - "Steve Fulmer (@stevefulme1)"
 options:
+  id:
+    description:
+      - The unique identifier of the webhook_subscription resource.
+      - Required when updating or deleting an existing resource.
+    type: str
+    required: false
+
   state:
     description:
       - Desired state of the webhook_subscription resource.
@@ -29,11 +36,8 @@ options:
   webhook_subscription:
     description:
       - >-
-        
+
     type: dict
-
-
-
 
 
 extends_documentation_fragment:
@@ -41,43 +45,28 @@ extends_documentation_fragment:
 """
 
 EXAMPLES = r"""
-
 - name: Create a webhook_subscription
   pagerduty.pagerduty.webhook_subscription:
-
-
-
     state: present
-  # API: POST /webhook_subscriptions
-
-
-
+# API: POST /webhook_subscriptions
 - name: Update a webhook_subscription
   pagerduty.pagerduty.webhook_subscription:
     id: "existing_id"
-
-
     webhook_subscription: "updated_webhook_subscription"
-
-
     state: present
-  # API:  
-
-
-
+# API:
 - name: Delete a webhook_subscription
   pagerduty.pagerduty.webhook_subscription:
     id: "existing_id"
     state: absent
-  # API: DELETE /webhook_subscriptions/{id}
-
+# API: DELETE /webhook_subscriptions/{id}
 """
 
 RETURN = r"""
 
 webhook_subscription:
   description: >-
-    
+
   returned: success
   type: dict
 
@@ -117,7 +106,6 @@ def get_current_state(client, module):
         return None
 
 
-
 def needs_update(current, desired):
     """Compare current state against desired params and return True if an update is needed."""
     if current is None:
@@ -145,13 +133,11 @@ def main():
     spec = auth_argument_spec()
     spec.update(
         dict(
+            id=dict(type="str", required=False),
             state=dict(type="str", choices=["present", "absent"], default="present"),
 
             webhook_subscription=dict(
                 type="dict",
-
-
-
 
 
             ),

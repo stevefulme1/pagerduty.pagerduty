@@ -29,57 +29,45 @@ options:
   maintenance_window:
     description:
       - >-
-        
+
     type: dict
 
     required: true
 
-
-
-
+  id:
+    description:
+      - The unique identifier of the resource.
+      - Required when updating or deleting an existing resource.
+    type: str
+    required: false
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-
 - name: Create a maintenance_window
   pagerduty.pagerduty.maintenance_window:
-
-
     maintenance_window: "example_maintenance_window"
-
-
     state: present
-  # API: POST /maintenance_windows
-
-
-
+# API: POST /maintenance_windows
 - name: Update a maintenance_window
   pagerduty.pagerduty.maintenance_window:
     id: "existing_id"
-
-
-
     state: present
-  # API:  
-
-
-
+# API:
 - name: Delete a maintenance_window
   pagerduty.pagerduty.maintenance_window:
     id: "existing_id"
     state: absent
-  # API: DELETE /maintenance_windows/{id}
-
+# API: DELETE /maintenance_windows/{id}
 """
 
 RETURN = r"""
 
 maintenance_window:
   description: >-
-    
+
   returned: success
   type: dict
 
@@ -119,7 +107,6 @@ def get_current_state(client, module):
         return None
 
 
-
 def needs_update(current, desired):
     """Compare current state against desired params and return True if an update is needed."""
     if current is None:
@@ -149,13 +136,11 @@ def main():
         dict(
             state=dict(type="str", choices=["present", "absent"], default="present"),
 
+            id=dict(type="str", required=False),
             maintenance_window=dict(
                 type="dict",
 
                 required=True,
-
-
-
 
 
             ),

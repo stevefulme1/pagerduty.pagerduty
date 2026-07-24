@@ -19,7 +19,7 @@
 # ============================================================
 - name: Create team (check mode)
   pagerduty.pagerduty.team:
-
+    team: "{{ test_team_params.team }}"
     state: present
   check_mode: true
   register: create_check
@@ -48,7 +48,7 @@
 # ============================================================
 - name: Create team
   pagerduty.pagerduty.team:
-
+    team: "{{ test_team_params.team }}"
     state: present
   register: create_result
 
@@ -67,7 +67,7 @@
 # ============================================================
 - name: Create team again (idempotency)
   pagerduty.pagerduty.team:
-
+    team: "{{ test_team_params.team }}"
     state: present
   register: create_idempotent
 
@@ -114,6 +114,7 @@
 - name: Delete team (check mode)
   pagerduty.pagerduty.team:
     id: "{{ created_id }}"
+    team: {}
     state: absent
   check_mode: true
   register: delete_check
@@ -141,6 +142,7 @@
 - name: Delete team
   pagerduty.pagerduty.team:
     id: "{{ created_id }}"
+    team: {}
     state: absent
   register: delete_result
 
@@ -156,6 +158,7 @@
 - name: Delete team again (idempotency)
   pagerduty.pagerduty.team:
     id: "{{ created_id }}"
+    team: {}
     state: absent
   register: delete_idempotent
 

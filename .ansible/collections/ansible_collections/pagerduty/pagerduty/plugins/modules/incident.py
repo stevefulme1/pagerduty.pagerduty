@@ -34,10 +34,6 @@ options:
 
     required: true
 
-
-
-
-
   incidents:
     description:
       - >-
@@ -48,54 +44,31 @@ options:
     required: true
 
 
-
-
-
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-
 - name: Create a incident
   pagerduty.pagerduty.incident:
-
-
     incident: "example_incident"
-
-
-
     incidents: "example_incidents"
-
-
     state: present
-  # API: POST /incidents
-
-
-
+# API: POST /incidents
 - name: Update a incident
   pagerduty.pagerduty.incident:
     id: "existing_id"
-
-
-
-
-
     state: present
-  # API:  
-
-
-
+# API:
 """
 
 RETURN = r"""
 
 incident:
   description: >-
-    
+
   returned: success
   type: dict
-
 
 """
 
@@ -130,7 +103,6 @@ def get_current_state(client, module):
         return None
     except ClientError:
         return None
-
 
 
 def needs_update(current, desired):
@@ -170,20 +142,12 @@ def main():
 
                 required=True,
 
-
-
-
-
             ),
 
             incidents=dict(
                 type="list", elements="str",
 
                 required=True,
-
-
-
-
 
             ),
 
@@ -220,7 +184,6 @@ def main():
                     )
                     result.update(response if isinstance(response, dict) else {})
 
-
             elif needs_update(current, desired):
                 # Resource exists but needs updating
                 result["changed"] = True
@@ -238,7 +201,6 @@ def main():
                         data=desired,
                     )
                     result.update(response if isinstance(response, dict) else {})
-
 
             else:
                 # Resource exists and is up-to-date
