@@ -12,7 +12,7 @@ DOCUMENTATION = r"""
 ---
 module: schedule
 short_description: Manage schedules
-version_added: "1.0.0"
+version_added: "0.1.0"
 description:
   - Create, update, and delete schedule resources.
   - Supports check mode and diff mode for safe operations.
@@ -21,25 +21,28 @@ author:
 options:
   state:
     description:
-      - Desired state of the schedule resource.
+      - Desired state of the resource.
     type: str
     choices: ['present', 'absent']
     default: present
+    version_added: "0.1.0"
 
   schedule:
     description:
       - >-
-
+        Dictionary describing the schedule. Must include C(name)
+        and C(time_zone).
     type: dict
 
     required: true
+    version_added: "0.1.0"
 
   id:
     description:
-      - The unique identifier of the resource.
-      - Required when updating or deleting an existing resource.
+      - The PagerDuty resource ID. Required when C(state=absent).
     type: str
     required: false
+    version_added: "0.1.0"
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
@@ -48,29 +51,40 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 - name: Create a schedule
   pagerduty.pagerduty.schedule:
-    schedule: "example_schedule"
+    schedule:
+      name: Primary On-Call
+      time_zone: America/New_York
+      schedule_layers:
+        - name: Layer 1
+          start: "2024-06-01T00:00:00Z"
+          rotation_virtual_start: "2024-06-01T00:00:00Z"
+          rotation_turn_length_seconds: 604800
+          users:
+            - user:
+                id: PUSER123
+                type: user_reference
     state: present
-# API: POST /schedules
+
 - name: Update a schedule
   pagerduty.pagerduty.schedule:
-    id: "existing_id"
+    id: PSCHED123
+    schedule:
+      name: Updated On-Call Schedule
+      time_zone: America/Chicago
     state: present
-# API:
+
 - name: Delete a schedule
   pagerduty.pagerduty.schedule:
-    id: "existing_id"
+    id: PSCHED123
     state: absent
-# API: DELETE /schedules/{id}
 """
 
 RETURN = r"""
 
 schedule:
-  description: >-
-
+  description: The schedule resource as returned by the PagerDuty API.
   returned: success
   type: dict
-
 
 """
 
@@ -84,27 +98,18 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 
 def get_current_state(client, module):
     """Retrieve the current state of the schedule via GET."""
-
-    # No single-resource GET endpoint; fall back to list + filter
     identifier = module.params.get("id")
-
-    search_key = "id"
-    search_value = identifier
-
-    if search_value is None:
+    if identifier is None:
         return None
     try:
-        items = client.get("/schedules")
-        if isinstance(items, dict):
-            items = items.get("results", items.get("data", items.get("items", [])))
-        for item in items:
-            if str(item.get(search_key)) == str(search_value):
-                return item
-            if str(item.get("id")) == str(search_value):
-                return item
-        return None
-    except ClientError:
-        return None
+        response = client.get("/schedules/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("schedule", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def needs_update(current, desired):
@@ -150,7 +155,7 @@ def main():
     module = AnsibleModule(
         argument_spec=spec,
         supports_check_mode=True,
-
+        required_if=[("state", "absent", ["id"])],
     )
 
     state = module.params["state"]

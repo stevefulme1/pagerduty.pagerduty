@@ -12,7 +12,7 @@ DOCUMENTATION = r"""
 ---
 module: incident
 short_description: Manage incidents
-version_added: "1.0.0"
+version_added: "0.1.0"
 description:
   - Create, update, and delete incident resources.
   - Supports check mode and diff mode for safe operations.
@@ -21,52 +21,63 @@ author:
 options:
   state:
     description:
-      - Desired state of the incident resource.
+      - Desired state of the resource.
     type: str
     choices: ['present', 'absent']
     default: present
+    version_added: "0.1.0"
 
   incident:
     description:
       - >-
-        The parameters of the incident to update.
+        Dictionary describing the incident. Must include C(type),
+        C(title), and C(service) reference.
     type: dict
+    version_added: "0.1.0"
 
-    required: true
-
-  incidents:
+  id:
     description:
-      - >-
-        An array of incidents, including the parameters to update.
-    type: list
-    elements: str
-
-    required: true
-
+      - The PagerDuty resource ID. Required when C(state=absent).
+    type: str
+    required: false
+    version_added: "0.1.0"
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-- name: Create a incident
+- name: Create an incident
   pagerduty.pagerduty.incident:
-    incident: "example_incident"
-    incidents: "example_incidents"
+    incident:
+      type: incident
+      title: Server on fire
+      service:
+        id: PSVC123
+        type: service_reference
     state: present
-# API: POST /incidents
-- name: Update a incident
+
+- name: Update an incident
   pagerduty.pagerduty.incident:
-    id: "existing_id"
+    id: PINC123
+    incident:
+      type: incident_reference
+      title: Server on fire - updated
+      service:
+        id: PSVC123
+        type: service_reference
     state: present
-# API:
+
+- name: Resolve an incident
+  pagerduty.pagerduty.incident:
+    id: PINC123
+    state: absent
 """
 
 RETURN = r"""
 
 incident:
-  description: >-
-
+  description: The incident resource as returned by the PagerDuty API.
   returned: success
   type: dict
 
@@ -82,27 +93,18 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 
 def get_current_state(client, module):
     """Retrieve the current state of the incident via GET."""
-
-    # No single-resource GET endpoint; fall back to list + filter
     identifier = module.params.get("id")
-
-    search_key = "id"
-    search_value = identifier
-
-    if search_value is None:
+    if identifier is None:
         return None
     try:
-        items = client.get("/incidents")
-        if isinstance(items, dict):
-            items = items.get("results", items.get("data", items.get("items", [])))
-        for item in items:
-            if str(item.get(search_key)) == str(search_value):
-                return item
-            if str(item.get("id")) == str(search_value):
-                return item
-        return None
-    except ClientError:
-        return None
+        response = client.get("/incidents/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("incident", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def needs_update(current, desired):
@@ -125,9 +127,6 @@ def build_payload(module):
     if module.params.get("incident") is not None:
         payload["incident"] = module.params["incident"]
 
-    if module.params.get("incidents") is not None:
-        payload["incidents"] = module.params["incidents"]
-
     return payload
 
 
@@ -137,17 +136,9 @@ def main():
         dict(
             state=dict(type="str", choices=["present", "absent"], default="present"),
 
+            id=dict(type="str", required=False),
             incident=dict(
                 type="dict",
-
-                required=True,
-
-            ),
-
-            incidents=dict(
-                type="list", elements="str",
-
-                required=True,
 
             ),
 
@@ -157,7 +148,7 @@ def main():
     module = AnsibleModule(
         argument_spec=spec,
         supports_check_mode=True,
-
+        required_if=[("state", "present", ["incident"]), ("state", "absent", ["id"])],
     )
 
     state = module.params["state"]

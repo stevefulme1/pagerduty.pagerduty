@@ -12,7 +12,7 @@ tags:
   - pagerduty
   - api
   - monitoring
-repository: https://github.com/stevefulme1/ansible-pagerduty
+repository: https://github.com/stevefulme1/pagerduty.pagerduty
 build_ignore:
   - tests/output
   - .tox

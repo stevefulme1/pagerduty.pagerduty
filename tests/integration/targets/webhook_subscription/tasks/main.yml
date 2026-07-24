@@ -6,13 +6,22 @@
 
 - name: Set test variables
   ansible.builtin.set_fact:
-    test_webhook_subscription_params: {}
+    test_webhook_subscription_params:
+      webhook_subscription:
+        type: webhook_subscription
+        delivery_method:
+          type: http_delivery_method
+          url: "{{ test_webhook_url | default('https://example.com/webhook') }}"
+        events:
+          - incident.triggered
+          - incident.resolved
 
 # ============================================================
 # CREATE - check mode
 # ============================================================
 - name: Create webhook_subscription (check mode)
   pagerduty.pagerduty.webhook_subscription:
+    webhook_subscription: "{{ test_webhook_subscription_params.webhook_subscription }}"
     state: present
   check_mode: true
   register: create_check
@@ -38,6 +47,7 @@
 # ============================================================
 - name: Create webhook_subscription
   pagerduty.pagerduty.webhook_subscription:
+    webhook_subscription: "{{ test_webhook_subscription_params.webhook_subscription }}"
     state: present
   register: create_result
 
@@ -56,6 +66,7 @@
 # ============================================================
 - name: Create webhook_subscription again (idempotency)
   pagerduty.pagerduty.webhook_subscription:
+    webhook_subscription: "{{ test_webhook_subscription_params.webhook_subscription }}"
     state: present
   register: create_idempotent
 

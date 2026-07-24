@@ -12,7 +12,7 @@ DOCUMENTATION = r"""
 ---
 module: service
 short_description: Manage services
-version_added: "1.0.0"
+version_added: "0.1.0"
 description:
   - Create, update, and delete service resources.
   - Supports check mode and diff mode for safe operations.
@@ -21,25 +21,28 @@ author:
 options:
   state:
     description:
-      - Desired state of the service resource.
+      - Desired state of the resource.
     type: str
     choices: ['present', 'absent']
     default: present
+    version_added: "0.1.0"
 
   service:
     description:
       - >-
-
+        Dictionary describing the service. Must include C(name)
+        and C(escalation_policy) reference.
     type: dict
 
     required: true
+    version_added: "0.1.0"
 
   id:
     description:
-      - The unique identifier of the resource.
-      - Required when updating or deleting an existing resource.
+      - The PagerDuty resource ID. Required when C(state=absent).
     type: str
     required: false
+    version_added: "0.1.0"
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
@@ -48,29 +51,35 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 - name: Create a service
   pagerduty.pagerduty.service:
-    service: "example_service"
+    service:
+      name: My Web Service
+      escalation_policy:
+        id: POLICY123
+        type: escalation_policy_reference
     state: present
-# API: POST /services
+
 - name: Update a service
   pagerduty.pagerduty.service:
-    id: "existing_id"
+    id: PSVC123
+    service:
+      name: Updated Web Service
+      escalation_policy:
+        id: POLICY456
+        type: escalation_policy_reference
     state: present
-# API:
+
 - name: Delete a service
   pagerduty.pagerduty.service:
-    id: "existing_id"
+    id: PSVC123
     state: absent
-# API: DELETE /services/{id}
 """
 
 RETURN = r"""
 
 service:
-  description: >-
-
+  description: The service resource as returned by the PagerDuty API.
   returned: success
   type: dict
-
 
 """
 
@@ -84,27 +93,18 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 
 def get_current_state(client, module):
     """Retrieve the current state of the service via GET."""
-
-    # No single-resource GET endpoint; fall back to list + filter
     identifier = module.params.get("id")
-
-    search_key = "id"
-    search_value = identifier
-
-    if search_value is None:
+    if identifier is None:
         return None
     try:
-        items = client.get("/services")
-        if isinstance(items, dict):
-            items = items.get("results", items.get("data", items.get("items", [])))
-        for item in items:
-            if str(item.get(search_key)) == str(search_value):
-                return item
-            if str(item.get("id")) == str(search_value):
-                return item
-        return None
-    except ClientError:
-        return None
+        response = client.get("/services/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("service", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def needs_update(current, desired):
@@ -150,7 +150,7 @@ def main():
     module = AnsibleModule(
         argument_spec=spec,
         supports_check_mode=True,
-
+        required_if=[("state", "absent", ["id"])],
     )
 
     state = module.params["state"]
