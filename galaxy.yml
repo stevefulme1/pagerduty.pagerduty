@@ -1,7 +1,7 @@
 ---
-namespace: pagerduty
+namespace: stevefulme1
 name: pagerduty
-version: 0.2.0
+version: 0.2.1
 readme: README.md
 authors:
   - Steve Fulmer (@stevefulme1)
@@ -17,4 +17,3 @@ build_ignore:
   - tests/output
   - .tox
   - .venv
-license_file: COPYING
