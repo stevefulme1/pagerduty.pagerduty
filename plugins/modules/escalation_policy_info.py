@@ -12,7 +12,7 @@ DOCUMENTATION = r"""
 ---
 module: escalation_policy_info
 short_description: Retrieve information about escalation_policy resources
-version_added: "1.0.0"
+version_added: "0.1.0"
 description:
   - Retrieve a single escalation_policy by its identifier, or list all escalation_policy resources.
   - This module always reports C(changed=False).
@@ -26,15 +26,15 @@ options:
     type: str
     required: false
 
-  page:
+  offset:
     description:
-      - Page number for paginated results.
+      - Offset for paginated results.
       - Only applies when listing resources.
     type: int
     required: false
-  page_size:
+  limit:
     description:
-      - Number of results per page.
+      - Maximum number of results per request.
       - Only applies when listing resources.
     type: int
     required: false
@@ -54,13 +54,13 @@ EXAMPLES = r"""
 
 - name: List escalation_policy resources with pagination
   pagerduty.pagerduty.escalation_policy_info:
-    page: 1
-    page_size: 50
+    offset: 0
+    limit: 50
   register: result
 """
 
 RETURN = r"""
-escalation_policys:
+escalation_policies:
   description: List of escalation_policy resources matching the query.
   returned: always
   type: list
@@ -69,7 +69,7 @@ escalation_policys:
 
     escalation_policy:
       description: >-
-
+        A single escalation policy resource returned by the PagerDuty API.
       type: dict
 
 """
@@ -85,14 +85,15 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 def fetch_single(client, identifier):
     """Retrieve a single escalation_policy by identifier."""
 
-    # No single-resource GET endpoint; filter from list
-    items = client.get("/escalation_policies")
-    if isinstance(items, dict):
-        items = items.get("results", items.get("data", items.get("items", [])))
-    for item in items:
-        if str(item.get("id")) == str(identifier):
-            return item
-    return None
+    try:
+        response = client.get("/escalation_policies/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("escalation_policy", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def fetch_list(client, module):
@@ -100,17 +101,17 @@ def fetch_list(client, module):
 
     params = {}
 
-    page = module.params.get("page")
-    page_size = module.params.get("page_size")
+    offset = module.params.get("offset")
+    limit = module.params.get("limit")
 
-    if page is not None or page_size is not None:
-        if page is not None:
-            params["page"] = page
-        if page_size is not None:
-            params["page_size"] = page_size
+    if offset is not None or limit is not None:
+        if offset is not None:
+            params["offset"] = offset
+        if limit is not None:
+            params["limit"] = limit
         response = client.get("/escalation_policies", params=params)
         if isinstance(response, dict):
-            return response.get("results", response.get("data", response.get("items", [])))
+            return response.get("escalation_policies", response.get("data", response.get("items", [])))
         return response if isinstance(response, list) else []
     else:
         return client.get_paginated("/escalation_policies", params=params)
@@ -122,8 +123,8 @@ def main():
         dict(
             id=dict(type="str", required=False),
 
-            page=dict(type="int", required=False),
-            page_size=dict(type="int", required=False),
+            offset=dict(type="int", required=False),
+            limit=dict(type="int", required=False),
         )
     )
 
@@ -131,14 +132,14 @@ def main():
         argument_spec=spec,
         supports_check_mode=True,
         mutually_exclusive=[
-            ("id", "page"),
-            ("id", "page_size"),
+            ("id", "offset"),
+            ("id", "limit"),
         ],
     )
 
     result = dict(
         changed=False,
-        escalation_policys=[],
+        escalation_policies=[],
     )
 
     try:
@@ -147,9 +148,9 @@ def main():
 
         if identifier is not None:
             item = fetch_single(client, identifier)
-            result["escalation_policys"] = [item] if item else []
+            result["escalation_policies"] = [item] if item else []
         else:
-            result["escalation_policys"] = fetch_list(client, module)
+            result["escalation_policies"] = fetch_list(client, module)
 
     except ClientError as e:
         module.fail_json(msg=str(e), **result)

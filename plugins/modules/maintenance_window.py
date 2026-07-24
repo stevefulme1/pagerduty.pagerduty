@@ -12,7 +12,7 @@ DOCUMENTATION = r"""
 ---
 module: maintenance_window
 short_description: Manage maintenance windows
-version_added: "1.0.0"
+version_added: "0.1.0"
 description:
   - Create, update, and delete maintenance_window resources.
   - Supports check mode and diff mode for safe operations.
@@ -21,56 +21,67 @@ author:
 options:
   state:
     description:
-      - Desired state of the maintenance_window resource.
+      - Desired state of the resource.
     type: str
     choices: ['present', 'absent']
     default: present
+    version_added: "0.1.0"
 
   maintenance_window:
     description:
       - >-
-
+        Dictionary describing the maintenance window. Must include
+        C(start_time), C(end_time), and C(services) list.
     type: dict
 
     required: true
+    version_added: "0.1.0"
 
   id:
     description:
-      - The unique identifier of the resource.
-      - Required when updating or deleting an existing resource.
+      - The PagerDuty resource ID. Required when C(state=absent).
     type: str
     required: false
+    version_added: "0.1.0"
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
 """
 
 EXAMPLES = r"""
-- name: Create a maintenance_window
+- name: Create a maintenance window
   pagerduty.pagerduty.maintenance_window:
-    maintenance_window: "example_maintenance_window"
+    maintenance_window:
+      start_time: "2024-06-01T00:00:00Z"
+      end_time: "2024-06-01T04:00:00Z"
+      services:
+        - id: PSVC123
+          type: service_reference
     state: present
-# API: POST /maintenance_windows
-- name: Update a maintenance_window
+
+- name: Update a maintenance window
   pagerduty.pagerduty.maintenance_window:
-    id: "existing_id"
+    id: PMW123
+    maintenance_window:
+      start_time: "2024-06-01T00:00:00Z"
+      end_time: "2024-06-01T06:00:00Z"
+      services:
+        - id: PSVC123
+          type: service_reference
     state: present
-# API:
-- name: Delete a maintenance_window
+
+- name: Delete a maintenance window
   pagerduty.pagerduty.maintenance_window:
-    id: "existing_id"
+    id: PMW123
     state: absent
-# API: DELETE /maintenance_windows/{id}
 """
 
 RETURN = r"""
 
 maintenance_window:
-  description: >-
-
+  description: The maintenance window resource as returned by the PagerDuty API.
   returned: success
   type: dict
-
 
 """
 
@@ -84,27 +95,18 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 
 def get_current_state(client, module):
     """Retrieve the current state of the maintenance_window via GET."""
-
-    # No single-resource GET endpoint; fall back to list + filter
     identifier = module.params.get("id")
-
-    search_key = "id"
-    search_value = identifier
-
-    if search_value is None:
+    if identifier is None:
         return None
     try:
-        items = client.get("/maintenance_windows")
-        if isinstance(items, dict):
-            items = items.get("results", items.get("data", items.get("items", [])))
-        for item in items:
-            if str(item.get(search_key)) == str(search_value):
-                return item
-            if str(item.get("id")) == str(search_value):
-                return item
-        return None
-    except ClientError:
-        return None
+        response = client.get("/maintenance_windows/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("maintenance_window", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def needs_update(current, desired):
@@ -150,7 +152,7 @@ def main():
     module = AnsibleModule(
         argument_spec=spec,
         supports_check_mode=True,
-
+        required_if=[("state", "absent", ["id"])],
     )
 
     state = module.params["state"]

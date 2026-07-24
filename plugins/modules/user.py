@@ -11,8 +11,8 @@ __metaclass__ = type
 DOCUMENTATION = r"""
 ---
 module: user
-short_description: Manage teams
-version_added: "1.0.0"
+short_description: Manage users
+version_added: "0.1.0"
 description:
   - Create, update, and delete user resources.
   - Supports check mode and diff mode for safe operations.
@@ -21,19 +21,21 @@ author:
 options:
   state:
     description:
-      - Desired state of the user resource.
+      - Desired state of the resource.
     type: str
     choices: ['present', 'absent']
     default: present
+    version_added: "0.1.0"
 
   user:
     description:
       - >-
-
+        Dictionary describing the user. Must include C(name)
+        and C(email).
     type: dict
 
     required: true
-
+    version_added: "0.1.0"
 
   role:
     description:
@@ -41,15 +43,15 @@ options:
         The role of the user on the team.
     type: str
 
-
+    version_added: "0.1.0"
     choices: ["observer", "responder", "manager"]
 
   id:
     description:
-      - The unique identifier of the resource.
-      - Required when updating or deleting an existing resource.
+      - The PagerDuty resource ID. Required when C(state=absent).
     type: str
     required: false
+    version_added: "0.1.0"
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
@@ -58,30 +60,32 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 - name: Create a user
   pagerduty.pagerduty.user:
-    user: "example_user"
+    user:
+      name: Jane Doe
+      email: jane.doe@example.com
     state: present
-# API: POST /users
+
 - name: Update a user
   pagerduty.pagerduty.user:
-    id: "existing_id"
-    role: "updated_role"
+    id: PUSER123
+    user:
+      name: Jane Doe
+      email: jane.doe@example.com
+    role: manager
     state: present
-# API:
+
 - name: Delete a user
   pagerduty.pagerduty.user:
-    id: "existing_id"
+    id: PUSER123
     state: absent
-# API: DELETE /users/{id}
 """
 
 RETURN = r"""
 
 user:
-  description: >-
-
+  description: The user resource as returned by the PagerDuty API.
   returned: success
   type: dict
-
 
 """
 
@@ -95,27 +99,18 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 
 def get_current_state(client, module):
     """Retrieve the current state of the user via GET."""
-
-    # No single-resource GET endpoint; fall back to list + filter
     identifier = module.params.get("id")
-
-    search_key = "id"
-    search_value = identifier
-
-    if search_value is None:
+    if identifier is None:
         return None
     try:
-        items = client.get("/users")
-        if isinstance(items, dict):
-            items = items.get("results", items.get("data", items.get("items", [])))
-        for item in items:
-            if str(item.get(search_key)) == str(search_value):
-                return item
-            if str(item.get("id")) == str(search_value):
-                return item
-        return None
-    except ClientError:
-        return None
+        response = client.get("/users/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("user", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def needs_update(current, desired):
@@ -171,7 +166,7 @@ def main():
     module = AnsibleModule(
         argument_spec=spec,
         supports_check_mode=True,
-
+        required_if=[("state", "absent", ["id"])],
     )
 
     state = module.params["state"]

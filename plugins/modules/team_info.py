@@ -12,7 +12,7 @@ DOCUMENTATION = r"""
 ---
 module: team_info
 short_description: Retrieve information about team resources
-version_added: "1.0.0"
+version_added: "0.1.0"
 description:
   - Retrieve a single team by its identifier, or list all team resources.
   - This module always reports C(changed=False).
@@ -26,16 +26,15 @@ options:
     type: str
     required: false
 
-
-  page:
+  offset:
     description:
-      - Page number for paginated results.
+      - Offset for paginated results.
       - Only applies when listing resources.
     type: int
     required: false
-  page_size:
+  limit:
     description:
-      - Number of results per page.
+      - Maximum number of results per request.
       - Only applies when listing resources.
     type: int
     required: false
@@ -53,11 +52,10 @@ EXAMPLES = r"""
   pagerduty.pagerduty.team_info:
   register: result
 
-
 - name: List team resources with pagination
   pagerduty.pagerduty.team_info:
-    page: 1
-    page_size: 50
+    offset: 0
+    limit: 50
   register: result
 """
 
@@ -71,7 +69,7 @@ teams:
 
     team:
       description: >-
-
+        A single team resource returned by the PagerDuty API.
       type: dict
 
 
@@ -88,14 +86,15 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 def fetch_single(client, identifier):
     """Retrieve a single team by identifier."""
 
-    # No single-resource GET endpoint; filter from list
-    items = client.get("/teams")
-    if isinstance(items, dict):
-        items = items.get("results", items.get("data", items.get("items", [])))
-    for item in items:
-        if str(item.get("id")) == str(identifier):
-            return item
-    return None
+    try:
+        response = client.get("/teams/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("team", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def fetch_list(client, module):
@@ -103,17 +102,17 @@ def fetch_list(client, module):
 
     params = {}
 
-    page = module.params.get("page")
-    page_size = module.params.get("page_size")
+    offset = module.params.get("offset")
+    limit = module.params.get("limit")
 
-    if page is not None or page_size is not None:
-        if page is not None:
-            params["page"] = page
-        if page_size is not None:
-            params["page_size"] = page_size
+    if offset is not None or limit is not None:
+        if offset is not None:
+            params["offset"] = offset
+        if limit is not None:
+            params["limit"] = limit
         response = client.get("/teams", params=params)
         if isinstance(response, dict):
-            return response.get("results", response.get("data", response.get("items", [])))
+            return response.get("teams", response.get("data", response.get("items", [])))
         return response if isinstance(response, list) else []
     else:
         return client.get_paginated("/teams", params=params)
@@ -125,8 +124,8 @@ def main():
         dict(
             id=dict(type="str", required=False),
 
-            page=dict(type="int", required=False),
-            page_size=dict(type="int", required=False),
+            offset=dict(type="int", required=False),
+            limit=dict(type="int", required=False),
         )
     )
 
@@ -134,8 +133,8 @@ def main():
         argument_spec=spec,
         supports_check_mode=True,
         mutually_exclusive=[
-            ("id", "page"),
-            ("id", "page_size"),
+            ("id", "offset"),
+            ("id", "limit"),
         ],
     )
 

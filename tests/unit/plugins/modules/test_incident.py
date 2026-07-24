@@ -44,7 +44,7 @@ class TestGetCurrentState:
         resource_args["id"] = "res-123"
         mock_client = MagicMock()
         existing = _build_resource()
-        mock_client.get.return_value = {"items": [existing]}
+        mock_client.get.return_value = {"incident": existing}
 
         mock_module = MagicMock()
         mock_module.params = resource_args
@@ -56,8 +56,10 @@ class TestGetCurrentState:
     def test_returns_none_when_not_found(self, resource_args):
         """get_current_state returns None when resource does not exist."""
         resource_args["id"] = "res-123"
+        from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client import ClientError
+
         mock_client = MagicMock()
-        mock_client.get.return_value = {"items": []}
+        mock_client.get.side_effect = ClientError("not found", status_code=404)
 
         mock_module = MagicMock()
         mock_module.params = resource_args
@@ -168,7 +170,7 @@ class TestCreate:
 
         mock_client = MagicMock()
         mock_client.get.return_value = {"results": []}
-        mock_client.POST.return_value = _build_resource()
+        mock_client.post.return_value = _build_resource()
         mock_client_cls.return_value = mock_client
 
         # Patch get_current_state to return None (new resource)
@@ -197,7 +199,7 @@ class TestCreate:
 
         mock_module.exit_json.assert_called_once()
         assert mock_module.exit_json.call_args[1]["changed"] is True
-        mock_client.POST.assert_not_called()
+        mock_client.post.assert_not_called()
 
 
 class TestDelete:
@@ -322,5 +324,5 @@ class TestIdempotent:
 
         mock_module.exit_json.assert_called_once()
         assert mock_module.exit_json.call_args[1]["changed"] is False
-        mock_client.POST.assert_not_called()
+        mock_client.post.assert_not_called()
         mock_client.put.assert_not_called()

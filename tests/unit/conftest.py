@@ -52,7 +52,7 @@ def mock_client():
     """Create a mock API client."""
     client = MagicMock()
     client.get.return_value = {"results": []}
-    client.POST.return_value = {"id": "test-123"}
+    client.post.return_value = {"id": "test-123"}
     client.put.return_value = {"id": "test-123"}
     client.delete.return_value = None
     return client

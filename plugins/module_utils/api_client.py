@@ -57,6 +57,10 @@ class Client:
 
     def __init__(self, module):
         self.module = module
+        if module.params.get("api_key") is None:
+            module.fail_json(
+                msg="api_key is required. Set via module parameter or PAGERDUTY_API_KEY environment variable."
+            )
         self.base_url = module.params["api_url"].rstrip("/")
         self.validate_certs = module.params["validate_certs"]
         self.timeout = module.params["request_timeout"]
@@ -158,6 +162,19 @@ class Client:
     def get(self, path, params=None):
         """Perform a GET request."""
         return self._request("GET", path, params=params)
+
+    def get_single(self, path, resource_key=None):
+        """Fetch a single resource by its endpoint path.
+
+        PagerDuty wraps single-resource responses in a key
+        (e.g. ``{"service": {...}}``).  When *resource_key* is provided the
+        wrapped object is extracted and returned directly; otherwise the full
+        response dict is returned.
+        """
+        response = self.get(path)
+        if resource_key and resource_key in response:
+            return response[resource_key]
+        return response
 
     def post(self, path, data=None, params=None):
         """Perform a POST request."""

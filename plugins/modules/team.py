@@ -12,7 +12,7 @@ DOCUMENTATION = r"""
 ---
 module: team
 short_description: Manage teams
-version_added: "1.0.0"
+version_added: "0.1.0"
 description:
   - Create, update, and delete team resources.
   - Supports check mode and diff mode for safe operations.
@@ -21,25 +21,27 @@ author:
 options:
   state:
     description:
-      - Desired state of the team resource.
+      - Desired state of the resource.
     type: str
     choices: ['present', 'absent']
     default: present
+    version_added: "0.1.0"
 
   team:
     description:
       - >-
-
+        Dictionary describing the team. Must include C(name).
     type: dict
 
     required: true
+    version_added: "0.1.0"
 
   id:
     description:
-      - The unique identifier of the resource.
-      - Required when updating or deleting an existing resource.
+      - The PagerDuty resource ID. Required when C(state=absent).
     type: str
     required: false
+    version_added: "0.1.0"
 
 extends_documentation_fragment:
   - pagerduty.pagerduty.auth
@@ -48,29 +50,30 @@ extends_documentation_fragment:
 EXAMPLES = r"""
 - name: Create a team
   pagerduty.pagerduty.team:
-    team: "example_team"
+    team:
+      name: Engineering On-Call
+      description: Engineering team responsible for on-call rotation
     state: present
-# API: POST /teams
+
 - name: Update a team
   pagerduty.pagerduty.team:
-    id: "existing_id"
+    id: PTEAM123
+    team:
+      name: Updated Engineering Team
     state: present
-# API:
+
 - name: Delete a team
   pagerduty.pagerduty.team:
-    id: "existing_id"
+    id: PTEAM123
     state: absent
-# API: DELETE /teams/{id}
 """
 
 RETURN = r"""
 
 team:
-  description: >-
-
+  description: The team resource as returned by the PagerDuty API.
   returned: success
   type: dict
-
 
 """
 
@@ -84,27 +87,18 @@ from ansible_collections.pagerduty.pagerduty.plugins.module_utils.api_client imp
 
 def get_current_state(client, module):
     """Retrieve the current state of the team via GET."""
-
-    # No single-resource GET endpoint; fall back to list + filter
     identifier = module.params.get("id")
-
-    search_key = "id"
-    search_value = identifier
-
-    if search_value is None:
+    if identifier is None:
         return None
     try:
-        items = client.get("/teams")
-        if isinstance(items, dict):
-            items = items.get("results", items.get("data", items.get("items", [])))
-        for item in items:
-            if str(item.get(search_key)) == str(search_value):
-                return item
-            if str(item.get("id")) == str(search_value):
-                return item
-        return None
-    except ClientError:
-        return None
+        response = client.get("/teams/{0}".format(identifier))
+        if isinstance(response, dict):
+            return response.get("team", response)
+        return response
+    except ClientError as e:
+        if e.status_code == 404:
+            return None
+        raise
 
 
 def needs_update(current, desired):
@@ -150,7 +144,7 @@ def main():
     module = AnsibleModule(
         argument_spec=spec,
         supports_check_mode=True,
-
+        required_if=[("state", "absent", ["id"])],
     )
 
     state = module.params["state"]
