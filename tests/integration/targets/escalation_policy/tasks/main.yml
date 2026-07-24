@@ -1,4 +1,3 @@
-
 ---
 # Integration tests for pagerduty.pagerduty.escalation_policy
 #
@@ -9,10 +8,7 @@
   ansible.builtin.set_fact:
     test_escalation_policy_params:
 
-
       escalation_policy: "{{ test_escalation_policy | default('test_escalation_policy_value') }}"
-
-
 
 # ============================================================
 # CREATE - check mode
@@ -32,8 +28,6 @@
 
 - name: Verify escalation_policy was NOT actually created (check mode)
   pagerduty.pagerduty.escalation_policy_info:
-
-
 
   register: check_verify
 
@@ -90,9 +84,7 @@
     that:
       - info_result.escalation_policys | length == 1
 
-
       - info_result.escalation_policys[0].escalation_policy == test_escalation_policy_params.escalation_policy
-
 
     fail_msg: "Created resource does not match expected values"
 
@@ -100,13 +92,8 @@
 # UPDATE
 # ============================================================
 
-
-
-
-
 # No optional string parameters available for update testing.
 # Update idempotency tests are skipped for this resource.
-
 
 # ============================================================
 # DELETE - check mode

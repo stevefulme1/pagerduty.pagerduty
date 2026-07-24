@@ -1,4 +1,3 @@
-
 ---
 # Integration tests for pagerduty.pagerduty.maintenance_window
 #
@@ -9,10 +8,7 @@
   ansible.builtin.set_fact:
     test_maintenance_window_params:
 
-
       maintenance_window: "{{ test_maintenance_window | default('test_maintenance_window_value') }}"
-
-
 
 # ============================================================
 # CREATE - check mode
@@ -32,8 +28,6 @@
 
 - name: Verify maintenance_window was NOT actually created (check mode)
   pagerduty.pagerduty.maintenance_window_info:
-
-
 
   register: check_verify
 
@@ -90,9 +84,7 @@
     that:
       - info_result.maintenance_windows | length == 1
 
-
       - info_result.maintenance_windows[0].maintenance_window == test_maintenance_window_params.maintenance_window
-
 
     fail_msg: "Created resource does not match expected values"
 
@@ -100,13 +92,8 @@
 # UPDATE
 # ============================================================
 
-
-
-
-
 # No optional string parameters available for update testing.
 # Update idempotency tests are skipped for this resource.
-
 
 # ============================================================
 # DELETE - check mode
