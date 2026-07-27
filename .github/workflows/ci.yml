@@ -23,7 +23,7 @@ jobs:
           path: ansible_collections/${{ env.NAMESPACE }}/${{ env.COLLECTION }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -73,7 +73,7 @@ jobs:
 
       - name: Set up Python ${{ matrix.python }}
 
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
 
@@ -96,7 +96,7 @@ jobs:
           path: ansible_collections/${{ env.NAMESPACE }}/${{ env.COLLECTION }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
@@ -125,7 +125,7 @@ jobs:
           path: ansible_collections/${{ env.NAMESPACE }}/${{ env.COLLECTION }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
